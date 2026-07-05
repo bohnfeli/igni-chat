@@ -5,7 +5,24 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login } from "./matrix";
+import { login, rooms } from "./matrix";
+
+describe("rooms", () => {
+	beforeEach(() => {
+		vi.mocked(invoke).mockReset();
+	});
+
+	it("calls the rooms command and returns the parsed list", async () => {
+		vi.mocked(invoke).mockResolvedValue([
+			{ roomId: "!a:localhost", name: "General" },
+		]);
+
+		const result = await rooms();
+
+		expect(invoke).toHaveBeenCalledWith("rooms");
+		expect(result).toEqual([{ roomId: "!a:localhost", name: "General" }]);
+	});
+});
 
 describe("login", () => {
 	beforeEach(() => {

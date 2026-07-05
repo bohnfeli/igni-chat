@@ -5,6 +5,15 @@ export type LoginResult = {
 	deviceId: string;
 };
 
+export type Room = {
+	roomId: string;
+	name: string;
+};
+
+export function rooms(): Promise<Room[]> {
+	return invoke<Room[]>("rooms");
+}
+
 export function login(
 	homeserverUrl: string,
 	username: string,
