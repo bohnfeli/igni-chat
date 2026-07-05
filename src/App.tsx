@@ -1,22 +1,38 @@
 import { useState } from "react";
-import { login as matrixLogin } from "./matrix";
+import {
+	login as matrixLogin,
+	rooms as matrixRooms,
+	type Room,
+} from "./matrix";
 import { Button } from "./components/Button";
 import { Input } from "./components/Input";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/login.css";
 
-function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
+function App({
+	login = matrixLogin,
+	rooms = matrixRooms,
+}: {
+	login?: typeof matrixLogin;
+	rooms?: typeof matrixRooms;
+}) {
 	const [homeserverUrl, setHomeserverUrl] = useState("");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [userId, setUserId] = useState<string | null>(null);
+	const [roomList, setRoomList] = useState<Room[]>([]);
 	const [error, setError] = useState<string | null>(null);
 
 	if (userId) {
 		return (
 			<main className="app">
 				<p>{userId}</p>
+				<ul>
+					{roomList.map((r) => (
+						<li key={r.roomId}>{r.name}</li>
+					))}
+				</ul>
 			</main>
 		);
 	}
@@ -27,6 +43,7 @@ function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
 		try {
 			const result = await login(homeserverUrl, username, password);
 			setUserId(result.userId);
+			setRoomList(await rooms());
 		} catch (e) {
 			setError(String(e));
 		}
