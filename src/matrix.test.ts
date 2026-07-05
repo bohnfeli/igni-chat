@@ -27,4 +27,10 @@ describe("login", () => {
 		});
 		expect(result).toEqual({ userId: "@igni:localhost", deviceId: "DEVID" });
 	});
+
+	it("propagates the invoke rejection as the error message", async () => {
+		vi.mocked(invoke).mockRejectedValue("bad credentials");
+
+		await expect(login("u", "n", "p")).rejects.toBe("bad credentials");
+	});
 });
