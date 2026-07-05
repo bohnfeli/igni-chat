@@ -29,4 +29,22 @@ describe("App", () => {
 		);
 		expect(await screen.findByText("@igni:localhost")).toBeInTheDocument();
 	});
+
+	it("shows the error message and keeps the form when login fails", async () => {
+		const login = vi.fn().mockRejectedValue("bad credentials");
+		const user = userEvent.setup();
+
+		render(<App login={login} />);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		expect(await screen.findByText("bad credentials")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
+	});
 });
