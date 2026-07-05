@@ -12,24 +12,30 @@
 
 ## Getting Started
 
-> Placeholder — fill in once the project is scaffolded. Planned shape:
+Desktop app scaffolded (Tauri 2 + React + TS); backend wired to
+matrix-rust-sdk. Local Synapse is not yet provisioned — add it before the
+login→sync tracer bullet (see `AGENTS.md`).
 
-1. Start a local Synapse (docker-compose in `./dev/synapse`).
-2. `pnpm install` (frontend deps) and `cargo build` (Tauri backend).
-3. `pnpm tauri dev` to run the desktop app.
-4. Log in to the local Synapse with a test account.
+```bash
+pnpm install            # frontend deps (allows esbuild build via pnpm-workspace.yaml)
+cargo build             # Tauri backend (Rust) — in src-tauri/
+pnpm tauri dev          # run the desktop app
+```
+
+A Matrix account on local Synapse is assumed to already exist (registration
+is out of scope for v1).
 
 ## Architecture
 
-> Placeholder — to be filled once scaffolded. Intended shape:
-
-- **Tauri 2 backend (Rust):** binds matrix-rust-sdk; exposes the SDK through a
-  defined set of Tauri commands (the UI↔SDK seam).
-- **Vite + React frontend (TypeScript):** the desktop UI. Built with Atomic
-  Design (atoms → molecules → organisms → templates → pages) and a Feature-First
-  directory structure (organized by feature/domain, not by file type). Depends
-  only on the seam interface, never on raw SDK types.
-- **Dev Synapse:** docker-compose Matrix homeserver for testing, including E2EE.
+- **Tauri 2 backend (Rust):** `src-tauri/`. Depends on `matrix-sdk` 0.18
+  (default features: `e2e-encryption`, `automatic-room-key-forwarding`,
+  `sqlite`). Will expose the SDK through a defined set of Tauri commands —
+  the UI↔SDK seam. SDK uses rustls (no system-TLS linkage).
+- **Vite + React frontend (TypeScript):** `src/`. Runs in the Tauri webview.
+  Atomic Design + Feature-First structure emerge with the first feature.
+  Depends only on the seam interface, never on raw SDK types.
+- **Dev Synapse:** docker-compose homeserver for testing (including E2EE) —
+  not yet provisioned.
 
 ## Contributing
 
