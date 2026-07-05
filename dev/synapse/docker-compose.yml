@@ -1,0 +1,14 @@
+# Local dev Synapse for Igni-chat. localhost-only; do not expose publicly.
+# ponytail: `latest` drifts — pin a tag if reproducibility bites.
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: igni-synapse
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8008:8008"
+    volumes:
+      - ./data:/data
+    environment:
+      SYNAPSE_SERVER_NAME: localhost
+      SYNAPSE_REPORT_STATS: "no"
