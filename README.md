@@ -1,4 +1,4 @@
-# Desktop Client Element (working name)
+# Igni-chat
 
 > A tracer-bullet desktop Matrix client on Tauri 2 + matrix-rust-sdk + React —
 > proving a clean, minimal, debt-free path exists.

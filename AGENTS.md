@@ -1,11 +1,10 @@
-# Project: Desktop Client Element (working name — TBD)
+# Project: Igni-chat
 
 ## Vision
 
 A tracer-bullet desktop Matrix client that proves a clean, minimal, debt-free
 path is possible — in deliberate contrast to Element Desktop, a glorified
-wrapper around a debt-laden web codebase. Built on Tauri 2 + matrix-rust-sdk +
-React. Personal project; the deliverable is the proof that the architecture
+wrapper around a debt-laden web codebase. Built on Tauri 2 + matrix-rust-sdk + React. Personal project; the deliverable is the proof that the architecture
 breathes end-to-end, not a feature-complete Element replacement.
 
 ## Goals
