@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { login as matrixLogin } from "./matrix";
+import { Button } from "./components/Button";
+import { Input } from "./components/Input";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/login.css";
 
 function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
 	const [homeserverUrl, setHomeserverUrl] = useState("");
@@ -12,7 +15,7 @@ function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
 
 	if (userId) {
 		return (
-			<main>
+			<main className="app">
 				<p>{userId}</p>
 			</main>
 		);
@@ -30,33 +33,37 @@ function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
 	};
 
 	return (
-		<main>
-			<h1>Igni-chat</h1>
-			<form onSubmit={onSubmit}>
-				{error && <p role="alert">{error}</p>}
-				<label>
+		<main className="app">
+			<form className="login-card" onSubmit={onSubmit}>
+				<h1 className="login-title">Igni-chat</h1>
+				{error && (
+					<p role="alert" className="login-error">
+						{error}
+					</p>
+				)}
+				<label className="login-field">
 					homeserver
-					<input
+					<Input
 						value={homeserverUrl}
 						onChange={(e) => setHomeserverUrl(e.target.value)}
 					/>
 				</label>
-				<label>
+				<label className="login-field">
 					username
-					<input
+					<Input
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 					/>
 				</label>
-				<label>
+				<label className="login-field">
 					password
-					<input
+					<Input
 						type="password"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 					/>
 				</label>
-				<button type="submit">Log in</button>
+				<Button type="submit">Log in</Button>
 			</form>
 		</main>
 	);
