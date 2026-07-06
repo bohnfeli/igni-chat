@@ -15,12 +15,6 @@
 	gap: var(--space-xs);
 }
 
-.rail__user {
-	font: var(--font-mono);
-	color: var(--color-on-surface-muted);
-	padding: var(--space-xs) var(--space-sm);
-}
-
 .shell__conversation {
 	flex: 1;
 	min-width: 0;

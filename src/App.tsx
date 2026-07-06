@@ -14,11 +14,6 @@ import { Input } from "./components/Input";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/login.css";
-import "./styles/chat.css";
-
-function initials(name: string): string {
-	return name.replace(/^!/, "").charAt(0).toUpperCase() || "?";
-}
 
 function App({
 	login = matrixLogin,
@@ -105,48 +100,38 @@ function App({
 			}
 		};
 		return (
-			<main className="shell">
-				<aside className="shell__rail">
-					<p className="rail__user">{userId}</p>
-					{recovered ? (
-						<p className="room-item__preview">keys recovered</p>
-					) : (
-						<form className="login-card" onSubmit={onRecover}>
-							{error && (
-								<p role="alert" className="login-error">
-									{error}
-								</p>
-							)}
-							<label className="login-field">
-								recovery key
-								<Input
-									value={recoveryKeyInput}
-									onChange={(e) => setRecoveryKeyInput(e.target.value)}
-								/>
-							</label>
-							<Button type="submit">recover</Button>
-						</form>
-					)}
+			<main className="app">
+				<p>{userId}</p>
+				{recovered ? (
+					<p>recovered</p>
+				) : (
+					<form onSubmit={onRecover}>
+						{error && <p role="alert">{error}</p>}
+						<label>
+							recovery key
+							<input
+								value={recoveryKeyInput}
+								onChange={(e) => setRecoveryKeyInput(e.target.value)}
+							/>
+						</label>
+						<button type="submit">recover</button>
+					</form>
+				)}
+				<ul>
 					{roomList.map((r) => (
-						<button
-							key={r.roomId}
-							type="button"
-							className="room-item"
-							onClick={async () => {
-								setOpenRoom(r.roomId);
-								setHistory(await roomMessages(r.roomId));
-							}}
-						>
-							<span className="room-item__avatar" aria-hidden="true">
-								{initials(r.name)}
-							</span>
-							<span className="room-item__main">
-								<span className="room-item__name">{r.name}</span>
-							</span>
-						</button>
+						<li key={r.roomId}>
+							<button
+								type="button"
+								onClick={async () => {
+									setOpenRoom(r.roomId);
+									setHistory(await roomMessages(r.roomId));
+								}}
+							>
+								{r.name}
+							</button>
+						</li>
 					))}
-				</aside>
-				<section className="shell__conversation" />
+				</ul>
 			</main>
 		);
 	}

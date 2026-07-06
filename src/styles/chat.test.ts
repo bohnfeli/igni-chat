@@ -12,8 +12,9 @@ describe("message bubble styling", () => {
 			".bubble--received { background: var(--color-surface)",
 		);
 		expect(css).toContain(".bubble--sent");
-		expect(css).toContain(".bubble--sent { background: color-mix(");
-		expect(css).toContain("var(--color-primary) 16%, var(--color-surface)");
+		expect(css).toContain(
+			"color-mix(in srgb, var(--color-primary) 16%, var(--color-surface))",
+		);
 		expect(css).toContain("border-radius: var(--radius-lg)");
 		expect(css).toContain("font: var(--font-body-lg)");
 	});
