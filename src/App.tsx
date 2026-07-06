@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
 	login as matrixLogin,
+	recoverKey as matrixRecoverKey,
 	rooms as matrixRooms,
 	roomMessages as matrixRoomMessages,
 	sendMessage as matrixSendMessage,
@@ -15,11 +16,13 @@ import "./styles/login.css";
 
 function App({
 	login = matrixLogin,
+	recoverKey = matrixRecoverKey,
 	rooms = matrixRooms,
 	roomMessages = matrixRoomMessages,
 	sendMessage = matrixSendMessage,
 }: {
 	login?: typeof matrixLogin;
+	recoverKey?: typeof matrixRecoverKey;
 	rooms?: typeof matrixRooms;
 	roomMessages?: typeof matrixRoomMessages;
 	sendMessage?: typeof matrixSendMessage;
@@ -32,6 +35,8 @@ function App({
 	const [openRoom, setOpenRoom] = useState<string | null>(null);
 	const [history, setHistory] = useState<Message[]>([]);
 	const [draft, setDraft] = useState("");
+	const [recoveryKeyInput, setRecoveryKeyInput] = useState("");
+	const [recovered, setRecovered] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	if (openRoom) {
@@ -64,9 +69,35 @@ function App({
 	}
 
 	if (userId) {
+		const onRecover = async (event: React.FormEvent) => {
+			event.preventDefault();
+			setError(null);
+			try {
+				await recoverKey(recoveryKeyInput);
+				setRecoveryKeyInput("");
+				setRecovered(true);
+			} catch (e) {
+				setError(String(e));
+			}
+		};
 		return (
 			<main className="app">
 				<p>{userId}</p>
+				{recovered ? (
+					<p>recovered</p>
+				) : (
+					<form onSubmit={onRecover}>
+						{error && <p role="alert">{error}</p>}
+						<label>
+							recovery key
+							<input
+								value={recoveryKeyInput}
+								onChange={(e) => setRecoveryKeyInput(e.target.value)}
+							/>
+						</label>
+						<button type="submit">recover</button>
+					</form>
+				)}
 				<ul>
 					{roomList.map((r) => (
 						<li key={r.roomId}>

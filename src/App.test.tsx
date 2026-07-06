@@ -145,4 +145,30 @@ describe("App", () => {
 		);
 		expect(screen.getByLabelText(/message/i)).toHaveValue("");
 	});
+
+	it("submits the recovery key after login", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi.fn().mockResolvedValue([]);
+		const recoverKey = vi.fn().mockResolvedValue(undefined);
+		const user = userEvent.setup();
+
+		render(<App login={login} rooms={rooms} recoverKey={recoverKey} />);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		await user.type(screen.getByLabelText(/recovery key/i), "EsTL-2n0X");
+		await user.click(screen.getByRole("button", { name: /recover/i }));
+
+		expect(await screen.findByText(/recovered/i)).toBeInTheDocument();
+		expect(recoverKey).toHaveBeenCalledWith("EsTL-2n0X");
+	});
 });
