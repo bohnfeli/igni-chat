@@ -53,6 +53,12 @@ async fn login(
         .send()
         .await
         .map_err(|e| e.to_string())?;
+    // ponytail: self-sign this device so other clients show it as verified.
+    // No-op if cross-signing already exists; best-effort (login still works on failure).
+    let _ = client
+        .encryption()
+        .bootstrap_cross_signing_if_needed(None)
+        .await;
     *state.client.lock().map_err(|e| e.to_string())? = Some(client);
     Ok(LoginResult {
         user_id: response.user_id.to_string(),
