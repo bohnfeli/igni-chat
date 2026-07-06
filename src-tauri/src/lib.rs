@@ -3,7 +3,8 @@ use std::sync::Mutex;
 use matrix_sdk::config::SyncSettings;
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::events::{
-    room::message::MessageType, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
+    room::message::{MessageType, RoomMessageEventContent},
+    AnySyncMessageLikeEvent, AnySyncTimelineEvent,
 };
 use matrix_sdk::ruma::RoomId;
 
@@ -126,11 +127,33 @@ async fn room_messages(
     Ok(out)
 }
 
+#[tauri::command]
+async fn send_message(
+    state: tauri::State<'_, AppState>,
+    room_id: String,
+    body: String,
+) -> Result<(), String> {
+    let client = {
+        let guard = state.client.lock().map_err(|e| e.to_string())?;
+        guard
+            .clone()
+            .ok_or_else(|| "not logged in".to_string())?
+    };
+    let room_id = RoomId::parse(&room_id).map_err(|e| e.to_string())?;
+    let room = client
+        .get_room(&room_id)
+        .ok_or_else(|| "room not found".to_string())?;
+    room.send(RoomMessageEventContent::text_plain(body))
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![login, rooms, room_messages])
+        .invoke_handler(tauri::generate_handler![login, rooms, room_messages, send_message])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
