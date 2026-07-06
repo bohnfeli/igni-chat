@@ -1,0 +1,21 @@
+.button {
+	font: var(--font-label-md);
+	border-radius: var(--radius-md);
+	padding: var(--space-sm) var(--space-lg);
+	border: none;
+	cursor: pointer;
+}
+
+.button--primary {
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+}
+
+.button--primary:hover {
+	background: #ff8055;
+}
+
+.button--secondary {
+	background: transparent;
+	color: var(--color-on-surface);
+}
