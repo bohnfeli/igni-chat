@@ -107,9 +107,13 @@ breathes end-to-end, not a feature-complete Element replacement.
   future needs. Build what is needed now. When the future arrives, it will bring
 
   its own requirements.
+- **Aim for ~80% test coverage.** Pragmatic, not dogmatic. Cover real behavior
+
+  and branches (login flows, seams, non-trivial logic); skip trivial getters
+
+  and pure presentational glue. Don't write tests just to chase a number.
 - **Maximize the work that does not need to be done.** The best code is the code
 
   that never had to be written. Every line of code is a liability — it must be
-- Stay aligned to what already exists (**DRY**). If there is something that should   
+- Stay aligned to what already exists (**DRY**). If there is something that should
 be refactored first ask for permission
-
