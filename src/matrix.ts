@@ -23,6 +23,10 @@ export function roomMessages(roomId: string): Promise<Message[]> {
 	return invoke<Message[]>("room_messages", { roomId });
 }
 
+export function sendMessage(roomId: string, body: string): Promise<void> {
+	return invoke<void>("send_message", { roomId, body });
+}
+
 export function login(
 	homeserverUrl: string,
 	username: string,
