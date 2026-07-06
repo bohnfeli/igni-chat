@@ -105,16 +105,20 @@ function App({
 				{recovered ? (
 					<p>recovered</p>
 				) : (
-					<form onSubmit={onRecover}>
-						{error && <p role="alert">{error}</p>}
-						<label>
+					<form className="login-card" onSubmit={onRecover}>
+						{error && (
+							<p role="alert" className="login-error">
+								{error}
+							</p>
+						)}
+						<label className="login-field">
 							recovery key
-							<input
+							<Input
 								value={recoveryKeyInput}
 								onChange={(e) => setRecoveryKeyInput(e.target.value)}
 							/>
 						</label>
-						<button type="submit">recover</button>
+						<Button type="submit">recover</Button>
 					</form>
 				)}
 				<ul>
