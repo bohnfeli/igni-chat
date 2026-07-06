@@ -4,6 +4,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 
+vi.mock("@tauri-apps/api/event", () => ({
+	listen: vi.fn().mockResolvedValue(() => {}),
+}));
+
 describe("App", () => {
 	it("logs in with the form fields and shows the userId", async () => {
 		const login = vi.fn().mockResolvedValue({
@@ -144,6 +148,56 @@ describe("App", () => {
 			"fresh from composer",
 		);
 		expect(screen.getByLabelText(/message/i)).toHaveValue("");
+	});
+
+	it("appends a live message received for the open room", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi
+			.fn()
+			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
+		const roomMessages = vi.fn().mockResolvedValue([]);
+		let live:
+			| ((m: { roomId: string; sender: string; body: string }) => void)
+			| undefined;
+		const onMessage = vi
+			.fn()
+			.mockImplementation(
+				(cb: (m: { roomId: string; sender: string; body: string }) => void) => {
+					live = cb;
+					return Promise.resolve(() => {});
+				},
+			);
+		const user = userEvent.setup();
+
+		render(
+			<App
+				login={login}
+				rooms={rooms}
+				roomMessages={roomMessages}
+				onMessage={onMessage}
+			/>,
+		);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+		await user.click(await screen.findByRole("button", { name: "General" }));
+		await screen.findByLabelText(/message/i);
+
+		live!({
+			roomId: "!general:localhost",
+			sender: "@bob:localhost",
+			body: "live one",
+		});
+
+		expect(await screen.findByText(/live one/)).toBeInTheDocument();
 	});
 
 	it("submits the recovery key after login", async () => {

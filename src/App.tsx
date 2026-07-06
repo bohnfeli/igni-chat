@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	login as matrixLogin,
+	onMessage as matrixOnMessage,
 	recoverKey as matrixRecoverKey,
 	rooms as matrixRooms,
 	roomMessages as matrixRoomMessages,
@@ -16,12 +17,14 @@ import "./styles/login.css";
 
 function App({
 	login = matrixLogin,
+	onMessage = matrixOnMessage,
 	recoverKey = matrixRecoverKey,
 	rooms = matrixRooms,
 	roomMessages = matrixRoomMessages,
 	sendMessage = matrixSendMessage,
 }: {
 	login?: typeof matrixLogin;
+	onMessage?: typeof matrixOnMessage;
 	recoverKey?: typeof matrixRecoverKey;
 	rooms?: typeof matrixRooms;
 	roomMessages?: typeof matrixRoomMessages;
@@ -38,6 +41,22 @@ function App({
 	const [recoveryKeyInput, setRecoveryKeyInput] = useState("");
 	const [recovered, setRecovered] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!openRoom) return;
+		let unlisten: (() => void) | undefined;
+		onMessage((message) => {
+			if (message.roomId === openRoom) {
+				setHistory((prev) => [
+					...prev,
+					{ sender: message.sender, body: message.body },
+				]);
+			}
+		}).then((u) => {
+			unlisten = u;
+		});
+		return () => unlisten?.();
+	}, [openRoom, onMessage]);
 
 	if (openRoom) {
 		const onSend = async (event: React.FormEvent) => {
