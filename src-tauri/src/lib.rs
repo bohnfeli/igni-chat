@@ -1,12 +1,16 @@
+#![recursion_limit = "256"]
+
 use std::sync::Mutex;
 
 use matrix_sdk::config::SyncSettings;
 use matrix_sdk::room::MessagesOptions;
 use matrix_sdk::ruma::events::{
-    room::message::{MessageType, RoomMessageEventContent},
+    room::message::{MessageType, OriginalSyncRoomMessageEvent, RoomMessageEventContent},
     AnySyncMessageLikeEvent, AnySyncTimelineEvent,
 };
 use matrix_sdk::ruma::RoomId;
+use matrix_sdk::Room;
+use tauri::Emitter;
 
 #[derive(Default)]
 struct AppState {
@@ -27,6 +31,14 @@ struct RoomInfo {
     name: String,
 }
 
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct LiveMessage {
+    room_id: String,
+    sender: String,
+    body: String,
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct MessageInfo {
@@ -37,6 +49,7 @@ struct MessageInfo {
 #[tauri::command]
 async fn login(
     state: tauri::State<'_, AppState>,
+    app: tauri::AppHandle,
     homeserver_url: String,
     username: String,
     password: String,
@@ -59,6 +72,47 @@ async fn login(
         .encryption()
         .bootstrap_cross_signing_if_needed(None)
         .await;
+    // Initial sync so the room list is populated before the UI asks, and so
+    // the background loop below only receives *new* events.
+    client
+        .sync_once(SyncSettings::default())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let app_for_events = app.clone();
+    let own_user_id = response.user_id.clone();
+    client.add_event_handler(
+        move |ev: OriginalSyncRoomMessageEvent, room: Room| {
+            let app = app_for_events.clone();
+            let own_user_id = own_user_id.clone();
+            async move {
+                // ponytail: skip our own remote echo — the composer already
+                // appends optimistically. Other-device echoes are lost; add a
+                // per-message id if that matters.
+                if ev.sender == own_user_id {
+                    return;
+                }
+                if let MessageType::Text(text) = &ev.content.msgtype {
+                    let _ = app.emit(
+                        "message",
+                        LiveMessage {
+                            room_id: room.room_id().to_string(),
+                            sender: ev.sender.to_string(),
+                            body: text.body.clone(),
+                        },
+                    );
+                }
+            }
+        },
+    );
+
+    let loop_client = client.clone();
+    tauri::async_runtime::spawn(async move {
+        // ponytail: sync forever, ignore transient errors so live updates
+        // survive a blip. sync() resumes from the stored token.
+        let _ = loop_client.sync(SyncSettings::default()).await;
+    });
+
     *state.client.lock().map_err(|e| e.to_string())? = Some(client);
     Ok(LoginResult {
         user_id: response.user_id.to_string(),
@@ -74,10 +128,6 @@ async fn rooms(state: tauri::State<'_, AppState>) -> Result<Vec<RoomInfo>, Strin
             .clone()
             .ok_or_else(|| "not logged in".to_string())?
     };
-    client
-        .sync_once(SyncSettings::default())
-        .await
-        .map_err(|e| e.to_string())?;
     Ok(client
         .rooms()
         .into_iter()
