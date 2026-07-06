@@ -31,7 +31,7 @@ struct RoomInfo {
     name: String,
 }
 
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 struct LiveMessage {
     room_id: String,
@@ -80,27 +80,19 @@ async fn login(
         .map_err(|e| e.to_string())?;
 
     let app_for_events = app.clone();
-    let own_user_id = response.user_id.clone();
+    let own_user_id = response.user_id.to_string();
     client.add_event_handler(
         move |ev: OriginalSyncRoomMessageEvent, room: Room| {
             let app = app_for_events.clone();
             let own_user_id = own_user_id.clone();
             async move {
-                // ponytail: skip our own remote echo — the composer already
-                // appends optimistically. Other-device echoes are lost; add a
-                // per-message id if that matters.
-                if ev.sender == own_user_id {
-                    return;
-                }
-                if let MessageType::Text(text) = &ev.content.msgtype {
-                    let _ = app.emit(
-                        "message",
-                        LiveMessage {
-                            room_id: room.room_id().to_string(),
-                            sender: ev.sender.to_string(),
-                            body: text.body.clone(),
-                        },
-                    );
+                if let Some(msg) = live_message(
+                    ev.sender.as_ref(),
+                    &own_user_id,
+                    &ev.content.msgtype,
+                    room.room_id().as_ref(),
+                ) {
+                    let _ = app.emit("message", msg);
                 }
             }
         },
@@ -225,6 +217,27 @@ async fn recover_key(
     Ok(())
 }
 
+// Decide whether an incoming event becomes a live "message" event for the UI.
+// Separated from the handler so the echo-skip / text-only logic has a check.
+fn live_message(
+    sender: &str,
+    own_user_id: &str,
+    msgtype: &MessageType,
+    room_id: &str,
+) -> Option<LiveMessage> {
+    if sender == own_user_id {
+        return None;
+    }
+    let MessageType::Text(text) = msgtype else {
+        return None;
+    };
+    Some(LiveMessage {
+        room_id: room_id.to_string(),
+        sender: sender.to_string(),
+        body: text.body.clone(),
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -238,4 +251,32 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use matrix_sdk::ruma::events::room::message::TextMessageEventContent;
+
+    #[test]
+    fn emits_a_text_message_from_another_user() {
+        let text = MessageType::Text(TextMessageEventContent::plain("hi"));
+        assert_eq!(
+            live_message("@bob:localhost", "@me:localhost", &text, "!room:localhost"),
+            Some(LiveMessage {
+                room_id: "!room:localhost".into(),
+                sender: "@bob:localhost".into(),
+                body: "hi".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn suppresses_our_own_remote_echo() {
+        let text = MessageType::Text(TextMessageEventContent::plain("hi"));
+        assert_eq!(
+            live_message("@me:localhost", "@me:localhost", &text, "!room:localhost"),
+            None
+        );
+    }
 }
