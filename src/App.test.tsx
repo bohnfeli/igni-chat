@@ -104,4 +104,45 @@ describe("App", () => {
 		expect(await screen.findByText(/world/)).toBeInTheDocument();
 		expect(roomMessages).toHaveBeenCalledWith("!general:localhost");
 	});
+
+	it("sends a message from the composer and clears the input", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi
+			.fn()
+			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
+		const roomMessages = vi.fn().mockResolvedValue([]);
+		const sendMessage = vi.fn().mockResolvedValue(undefined);
+		const user = userEvent.setup();
+
+		render(
+			<App
+				login={login}
+				rooms={rooms}
+				roomMessages={roomMessages}
+				sendMessage={sendMessage}
+			/>,
+		);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+		await user.click(await screen.findByRole("button", { name: "General" }));
+
+		await user.type(screen.getByLabelText(/message/i), "fresh from composer");
+		await user.click(screen.getByRole("button", { name: /send/i }));
+
+		expect(await screen.findByText(/fresh from composer/)).toBeInTheDocument();
+		expect(sendMessage).toHaveBeenCalledWith(
+			"!general:localhost",
+			"fresh from composer",
+		);
+		expect(screen.getByLabelText(/message/i)).toHaveValue("");
+	});
 });

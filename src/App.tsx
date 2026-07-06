@@ -3,6 +3,7 @@ import {
 	login as matrixLogin,
 	rooms as matrixRooms,
 	roomMessages as matrixRoomMessages,
+	sendMessage as matrixSendMessage,
 	type Message,
 	type Room,
 } from "./matrix";
@@ -16,10 +17,12 @@ function App({
 	login = matrixLogin,
 	rooms = matrixRooms,
 	roomMessages = matrixRoomMessages,
+	sendMessage = matrixSendMessage,
 }: {
 	login?: typeof matrixLogin;
 	rooms?: typeof matrixRooms;
 	roomMessages?: typeof matrixRoomMessages;
+	sendMessage?: typeof matrixSendMessage;
 }) {
 	const [homeserverUrl, setHomeserverUrl] = useState("");
 	const [username, setUsername] = useState("");
@@ -28,9 +31,18 @@ function App({
 	const [roomList, setRoomList] = useState<Room[]>([]);
 	const [openRoom, setOpenRoom] = useState<string | null>(null);
 	const [history, setHistory] = useState<Message[]>([]);
+	const [draft, setDraft] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
 	if (openRoom) {
+		const onSend = async (event: React.FormEvent) => {
+			event.preventDefault();
+			const body = draft.trim();
+			if (!body) return;
+			setDraft("");
+			await sendMessage(openRoom, body);
+			setHistory((prev) => [...prev, { sender: userId ?? "", body }]);
+		};
 		return (
 			<main>
 				<ul>
@@ -40,6 +52,13 @@ function App({
 						</li>
 					))}
 				</ul>
+				<form onSubmit={onSend}>
+					<label>
+						message
+						<input value={draft} onChange={(e) => setDraft(e.target.value)} />
+					</label>
+					<button type="submit">send</button>
+				</form>
 			</main>
 		);
 	}
