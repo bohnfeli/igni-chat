@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { login as matrixLogin } from "./matrix";
+import "./styles/tokens.css";
+import "./styles/base.css";
 
 function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
 	const [homeserverUrl, setHomeserverUrl] = useState("");
