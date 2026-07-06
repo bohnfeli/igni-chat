@@ -57,7 +57,36 @@ Per-ecosystem behaviour:
 
 Run each step's `run` with `cwd` as working directory.
 
-### 4. Verify
+### 4. No fix available upstream (check before verifying)
+
+A `cargo update --precise` (or `pnpm add`) can fail because a **transitive**
+constraint pins the vulnerable crate below the fixed version. Before retrying,
+diagnose:
+
+- Read the cargo error: it names the gating crate and its constraint
+  (e.g. `required by package gtk v0.18.2 … dependency glib = "^0.18"`).
+- Confirm the gating chain is already at its published maximum:
+  `curl -sH 'User-Agent: repo' https://crates.io/api/v1/crates/<crate> |
+  jq -r .crate.max_version` for each crate in the chain.
+- Confirm the fix isn't compiled on the target: `cargo tree -i <pkg> --target
+  <our-target>` (empty = not linked into the build).
+
+If the gating chain is maxed out and/or the crate isn't compiled on the
+target, **there is no dependency bump that fixes the alert**. Do not fake a
+fix (no `--precise` to a wrong version, no `[patch]` hack). Instead:
+
+1. Do NOT commit anything.
+2. Report the chain + evidence to the user.
+3. Recommend dismissing the alert as `tolerable_risk` with the rationale —
+   but **ask first**; dismissing a security alert is a human decision:
+
+   ```bash
+   gh api -X PATCH repos/$REPO/dependabot/alerts/<number> \
+     -f dismissed_reason=tolerable_risk \
+     -f dismissed_comment="<chain + not-on-target rationale>" -F state=dismissed
+   ```
+
+### 5. Verify
 
 - Always: `pnpm test`.
 - If a rust alert was fixed: `cargo check` in the affected crate dir.
@@ -65,7 +94,7 @@ Run each step's `run` with `cwd` as working directory.
 If verification fails → revert the change (`git checkout -- <files>`) and
 rethink. Do not commit broken fixes.
 
-### 5. Commit (one per alert)
+### 6. Commit (one per alert)
 
 Conventional commit, e.g.:
 
@@ -76,7 +105,7 @@ fix(deps): bump glib to 0.20.0 (dependabot security alert #1)
 Stage only the manifest/lockfile the fix touched (`Cargo.lock`,
 `package.json`, `pnpm-lock.yaml`, …), not `ketchup-plan.md`.
 
-### 6. (Optional) dismiss / confirm
+### 7. (Optional) confirm
 
 Re-run step 1 — the fixed alert should now be `state: "dismissed"` or gone.
 
