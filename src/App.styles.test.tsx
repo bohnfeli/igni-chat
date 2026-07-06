@@ -3,7 +3,12 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
+import type { LoginResult, Message, Room } from "./matrix";
 import loginRaw from "./styles/login.css?raw";
+
+vi.mock("@tauri-apps/api/event", () => ({
+	listen: vi.fn().mockResolvedValue(() => {}),
+}));
 
 const loginCss = loginRaw.replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ");
 
@@ -113,5 +118,72 @@ describe("chat shell", () => {
 		expect(shell).toHaveClass("shell");
 		expect(shell.querySelector(".shell__rail")).not.toBeNull();
 		expect(shell.querySelector(".shell__conversation")).not.toBeNull();
+	});
+});
+
+describe("conversation view", () => {
+	async function openRoom(
+		overrides: {
+			login?: (
+				homeserverUrl: string,
+				username: string,
+				password: string,
+			) => Promise<LoginResult>;
+			rooms?: () => Promise<Room[]>;
+			roomMessages?: (roomId: string) => Promise<Message[]>;
+		} = {},
+	) {
+		const login =
+			overrides.login ??
+			(() =>
+				Promise.resolve({
+					userId: "@igni:localhost",
+					deviceId: "DEVID",
+				}));
+		const rooms =
+			overrides.rooms ??
+			(() =>
+				Promise.resolve([{ roomId: "!general:localhost", name: "General" }]));
+		const user = userEvent.setup();
+		render(
+			<App login={login} rooms={rooms} roomMessages={overrides.roomMessages} />,
+		);
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+		await user.click(await screen.findByRole("button", { name: "General" }));
+		return user;
+	}
+
+	it("renders a received message on surface and a sent message on an ember-tinted bubble", async () => {
+		await openRoom({
+			roomMessages: () =>
+				Promise.resolve([
+					{ sender: "@bob:localhost", body: "theirs" },
+					{ sender: "@igni:localhost", body: "mine" },
+				]),
+		});
+
+		const theirs = (await screen.findByText(/theirs/)).closest(".bubble");
+		expect(theirs).toHaveClass("bubble--received");
+		const mine = screen.getByText(/mine/).closest(".bubble");
+		expect(mine).toHaveClass("bubble--sent");
+	});
+
+	it("shows an encryption chip on the conversation header", async () => {
+		await openRoom({ roomMessages: () => Promise.resolve([]) });
+		expect(screen.getByText(/encrypted/i)).toHaveClass("chip");
+	});
+
+	it("disables the send button until the composer has text", async () => {
+		const user = await openRoom({ roomMessages: () => Promise.resolve([]) });
+		const send = screen.getByRole("button", { name: /send/i });
+		expect(send).toBeDisabled();
+		await user.type(screen.getByLabelText(/message/i), "hello");
+		expect(send).not.toBeDisabled();
 	});
 });

@@ -73,21 +73,42 @@ function App({
 			setHistory((prev) => [...prev, { sender: userId ?? "", body }]);
 		};
 		return (
-			<main>
-				<ul>
-					{history.map((m, i) => (
-						<li key={i}>
-							<strong>{m.sender}</strong>: {m.body}
-						</li>
-					))}
-				</ul>
-				<form onSubmit={onSend}>
-					<label>
-						message
-						<input value={draft} onChange={(e) => setDraft(e.target.value)} />
-					</label>
-					<button type="submit">send</button>
-				</form>
+			<main className="shell">
+				<section className="shell__conversation">
+					<header className="conversation__header">
+						<span className="chip">🔒 Encrypted</span>
+					</header>
+					<ol className="timeline">
+						{history.map((m, i) => {
+							const sent = m.sender === userId;
+							return (
+								<li
+									key={i}
+									className={`bubble ${sent ? "bubble--sent" : "bubble--received"}`}
+								>
+									{!sent && <p className="bubble__sender">{m.sender}</p>}
+									{m.body}
+								</li>
+							);
+						})}
+					</ol>
+					<form className="composer" onSubmit={onSend}>
+						<input
+							className="composer__field"
+							aria-label="message"
+							value={draft}
+							onChange={(e) => setDraft(e.target.value)}
+						/>
+						<button
+							type="submit"
+							className="composer__send"
+							aria-label="send"
+							disabled={draft.trim() === ""}
+						>
+							➤
+						</button>
+					</form>
+				</section>
 			</main>
 		);
 	}
