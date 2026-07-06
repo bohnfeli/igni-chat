@@ -10,8 +10,17 @@ export type Room = {
 	name: string;
 };
 
+export type Message = {
+	sender: string;
+	body: string;
+};
+
 export function rooms(): Promise<Room[]> {
 	return invoke<Room[]>("rooms");
+}
+
+export function roomMessages(roomId: string): Promise<Message[]> {
+	return invoke<Message[]>("room_messages", { roomId });
 }
 
 export function login(

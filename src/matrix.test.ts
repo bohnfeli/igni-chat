@@ -5,7 +5,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login, rooms } from "./matrix";
+import { login, roomMessages, rooms } from "./matrix";
 
 describe("rooms", () => {
 	beforeEach(() => {
@@ -21,6 +21,25 @@ describe("rooms", () => {
 
 		expect(invoke).toHaveBeenCalledWith("rooms");
 		expect(result).toEqual([{ roomId: "!a:localhost", name: "General" }]);
+	});
+});
+
+describe("roomMessages", () => {
+	beforeEach(() => {
+		vi.mocked(invoke).mockReset();
+	});
+
+	it("calls the room_messages command with the roomId and returns the parsed list", async () => {
+		vi.mocked(invoke).mockResolvedValue([
+			{ sender: "@igni:localhost", body: "hello" },
+		]);
+
+		const result = await roomMessages("!general:localhost");
+
+		expect(invoke).toHaveBeenCalledWith("room_messages", {
+			roomId: "!general:localhost",
+		});
+		expect(result).toEqual([{ sender: "@igni:localhost", body: "hello" }]);
 	});
 });
 
