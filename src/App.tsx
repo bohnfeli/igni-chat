@@ -68,8 +68,14 @@ function App({
 			event.preventDefault();
 			const body = draft.trim();
 			if (!body) return;
+			setError(null);
+			try {
+				await sendMessage(openRoom, body);
+			} catch (e) {
+				setError(String(e));
+				return; // keep the draft so the message is not lost on a failed send
+			}
 			setDraft("");
-			await sendMessage(openRoom, body);
 			setHistory((prev) => [...prev, { sender: userId ?? "", body }]);
 		};
 		return (
@@ -92,6 +98,11 @@ function App({
 							);
 						})}
 					</ol>
+					{error && (
+						<p role="alert" className="login-error">
+							{error}
+						</p>
+					)}
 					<form className="composer" onSubmit={onSend}>
 						<input
 							className="composer__field"

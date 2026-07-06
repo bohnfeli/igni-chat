@@ -150,6 +150,45 @@ describe("App", () => {
 		expect(screen.getByLabelText(/message/i)).toHaveValue("");
 	});
 
+	it("keeps the draft and shows an error when send fails", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi
+			.fn()
+			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
+		const roomMessages = vi.fn().mockResolvedValue([]);
+		const sendMessage = vi.fn().mockRejectedValue("send failed");
+		const user = userEvent.setup();
+
+		render(
+			<App
+				login={login}
+				rooms={rooms}
+				roomMessages={roomMessages}
+				sendMessage={sendMessage}
+			/>,
+		);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+		await user.click(await screen.findByRole("button", { name: "General" }));
+
+		const field = await screen.findByLabelText(/message/i);
+		await user.type(field, "will not send");
+		await user.click(screen.getByRole("button", { name: /send/i }));
+
+		expect(await screen.findByText(/send failed/)).toBeInTheDocument();
+		expect(field).toHaveValue("will not send");
+		expect(screen.queryByText("will not send")).not.toBeInTheDocument();
+	});
+
 	it("appends a live message received for the open room", async () => {
 		const login = vi.fn().mockResolvedValue({
 			userId: "@igni:localhost",
