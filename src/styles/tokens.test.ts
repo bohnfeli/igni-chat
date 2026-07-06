@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import tokensCss from "./tokens.css?raw";
+import tokensRaw from "./tokens.css?raw";
+
+const tokensCss = tokensRaw.replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ");
 
 describe("tokens.css", () => {
 	it.each([
@@ -46,18 +48,18 @@ describe("tokens.css", () => {
 	});
 
 	it.each([
-		["--font-display", "700 40px/1.1"],
-		["--font-h1", "600 28px/1.15"],
-		["--font-h2", "600 20px/1.2"],
-		["--font-body-lg", "400 17px/1.5"],
-		["--font-body-md", "400 15px/1.5"],
-		["--font-body-sm", "400 13px/1.45"],
-		["--font-label-md", "600 13px/1.2"],
-		["--font-label-sm", "600 11px/1"],
-		["--font-caption", "400 12px/1.3"],
-		["--font-mono", "400 13px/1.4"],
-	] as const)("%s starts with %s", (name, value) => {
-		expect(tokensCss).toContain(`${name}: ${value}`);
+		["--font-display", "700 40px/1.1", "Inter"],
+		["--font-h1", "600 28px/1.15", "Inter"],
+		["--font-h2", "600 20px/1.2", "Inter"],
+		["--font-body-lg", "400 17px/1.5", "Inter"],
+		["--font-body-md", "400 15px/1.5", "Inter"],
+		["--font-body-sm", "400 13px/1.45", "Inter"],
+		["--font-label-md", "600 13px/1.2", "Inter"],
+		["--font-label-sm", "600 11px/1", "Inter"],
+		["--font-caption", "400 12px/1.3", "Inter"],
+		["--font-mono", "400 13px/1.4", "JetBrains Mono"],
+	] as const)("%s carries weight/size/lh and family %s", (name, value, family) => {
+		expect(tokensCss).toContain(`${name}: ${value} "${family}"`);
 	});
 
 	it.each([
