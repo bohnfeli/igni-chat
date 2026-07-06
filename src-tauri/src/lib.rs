@@ -1,6 +1,11 @@
 use std::sync::Mutex;
 
 use matrix_sdk::config::SyncSettings;
+use matrix_sdk::room::MessagesOptions;
+use matrix_sdk::ruma::events::{
+    room::message::MessageType, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
+};
+use matrix_sdk::ruma::RoomId;
 
 #[derive(Default)]
 struct AppState {
@@ -19,6 +24,13 @@ struct LoginResult {
 struct RoomInfo {
     room_id: String,
     name: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MessageInfo {
+    sender: String,
+    body: String,
 }
 
 #[tauri::command]
@@ -72,11 +84,53 @@ async fn rooms(state: tauri::State<'_, AppState>) -> Result<Vec<RoomInfo>, Strin
         .collect())
 }
 
+#[tauri::command]
+async fn room_messages(
+    state: tauri::State<'_, AppState>,
+    room_id: String,
+) -> Result<Vec<MessageInfo>, String> {
+    let client = {
+        let guard = state.client.lock().map_err(|e| e.to_string())?;
+        guard
+            .clone()
+            .ok_or_else(|| "not logged in".to_string())?
+    };
+    let room_id =
+        RoomId::parse(&room_id).map_err(|e| e.to_string())?;
+    let room = client
+        .get_room(&room_id)
+        .ok_or_else(|| "room not found".to_string())?;
+    let messages = room
+        .messages(MessagesOptions::backward())
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut out: Vec<MessageInfo> = Vec::new();
+    for event in messages.chunk {
+        let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(msg))) =
+            event.raw().deserialize()
+        else {
+            continue;
+        };
+        let Some(original) = msg.as_original() else {
+            continue;
+        };
+        if let MessageType::Text(text) = &original.content.msgtype {
+            out.push(MessageInfo {
+                sender: original.sender.to_string(),
+                body: text.body.clone(),
+            });
+        }
+    }
+    // ponytail: backward() returns newest-first; flip to chronological.
+    out.reverse();
+    Ok(out)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![login, rooms])
+        .invoke_handler(tauri::generate_handler![login, rooms, room_messages])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
