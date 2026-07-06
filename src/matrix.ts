@@ -27,6 +27,10 @@ export function sendMessage(roomId: string, body: string): Promise<void> {
 	return invoke<void>("send_message", { roomId, body });
 }
 
+export function recoverKey(recoveryKey: string): Promise<void> {
+	return invoke<void>("recover_key", { recoveryKey });
+}
+
 export function login(
 	homeserverUrl: string,
 	username: string,

@@ -5,7 +5,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login, roomMessages, rooms, sendMessage } from "./matrix";
+import { login, recoverKey, roomMessages, rooms, sendMessage } from "./matrix";
 
 describe("rooms", () => {
 	beforeEach(() => {
@@ -56,6 +56,22 @@ describe("sendMessage", () => {
 		expect(invoke).toHaveBeenCalledWith("send_message", {
 			roomId: "!general:localhost",
 			body: "hi there",
+		});
+	});
+});
+
+describe("recoverKey", () => {
+	beforeEach(() => {
+		vi.mocked(invoke).mockReset();
+	});
+
+	it("calls the recover_key command with the recovery key", async () => {
+		vi.mocked(invoke).mockResolvedValue(undefined);
+
+		await recoverKey("EsTL-2n0X-...");
+
+		expect(invoke).toHaveBeenCalledWith("recover_key", {
+			recoveryKey: "EsTL-2n0X-...",
 		});
 	});
 });
