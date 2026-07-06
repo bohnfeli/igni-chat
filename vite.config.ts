@@ -35,5 +35,6 @@ export default defineConfig(async () => ({
 		environment: "node",
 		include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
 		setupFiles: ["./src/test-setup.ts"],
+		css: true,
 	},
 }));
