@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export type LoginResult = {
 	userId: string;
@@ -11,6 +12,12 @@ export type Room = {
 };
 
 export type Message = {
+	sender: string;
+	body: string;
+};
+
+export type RoomMessage = {
+	roomId: string;
 	sender: string;
 	body: string;
 };
@@ -41,4 +48,10 @@ export function login(
 		username,
 		password,
 	});
+}
+
+export function onMessage(
+	callback: (message: RoomMessage) => void,
+): Promise<UnlistenFn> {
+	return listen<RoomMessage>("message", (event) => callback(event.payload));
 }
