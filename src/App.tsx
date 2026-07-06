@@ -14,6 +14,11 @@ import { Input } from "./components/Input";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/login.css";
+import "./styles/chat.css";
+
+function initials(name: string): string {
+	return name.replace(/^!/, "").charAt(0).toUpperCase() || "?";
+}
 
 function App({
 	login = matrixLogin,
@@ -126,12 +131,18 @@ function App({
 						<li key={r.roomId}>
 							<button
 								type="button"
+								className="room-item"
 								onClick={async () => {
 									setOpenRoom(r.roomId);
 									setHistory(await roomMessages(r.roomId));
 								}}
 							>
-								{r.name}
+								<span className="room-item__avatar" aria-hidden="true">
+									{initials(r.name)}
+								</span>
+								<span className="room-item__main">
+									<span className="room-item__name">{r.name}</span>
+								</span>
 							</button>
 						</li>
 					))}

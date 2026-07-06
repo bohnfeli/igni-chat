@@ -61,3 +61,31 @@ describe("recovery form", () => {
 		);
 	});
 });
+
+describe("room list", () => {
+	it("renders each room as a styled item with avatar and name", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi
+			.fn()
+			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
+		const user = userEvent.setup();
+		render(<App login={login} rooms={rooms} />);
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		const item = await screen.findByRole("button", { name: "General" });
+		expect(item).toHaveClass("room-item");
+		expect(
+			item.querySelector(".room-item__avatar")?.getAttribute("aria-hidden"),
+		).toBe("true");
+		expect(item.querySelector(".room-item__name")?.textContent).toBe("General");
+	});
+});
