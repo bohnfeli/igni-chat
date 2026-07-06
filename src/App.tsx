@@ -105,48 +105,51 @@ function App({
 			}
 		};
 		return (
-			<main className="app">
-				<p>{userId}</p>
-				{recovered ? (
-					<p>recovered</p>
-				) : (
-					<form className="login-card" onSubmit={onRecover}>
-						{error && (
-							<p role="alert" className="login-error">
-								{error}
-							</p>
-						)}
-						<label className="login-field">
-							recovery key
-							<Input
-								value={recoveryKeyInput}
-								onChange={(e) => setRecoveryKeyInput(e.target.value)}
-							/>
-						</label>
-						<Button type="submit">recover</Button>
-					</form>
-				)}
-				<ul>
-					{roomList.map((r) => (
-						<li key={r.roomId}>
-							<button
-								type="button"
-								className="room-item"
-								onClick={async () => {
-									setOpenRoom(r.roomId);
-									setHistory(await roomMessages(r.roomId));
-								}}
-							>
-								<span className="room-item__avatar" aria-hidden="true">
-									{initials(r.name)}
-								</span>
-								<span className="room-item__main">
-									<span className="room-item__name">{r.name}</span>
-								</span>
-							</button>
-						</li>
-					))}
-				</ul>
+			<main className="shell">
+				<aside className="shell__rail">
+					<p className="rail__user">{userId}</p>
+					{recovered ? (
+						<p className="room-item__preview">keys recovered</p>
+					) : (
+						<form className="login-card" onSubmit={onRecover}>
+							{error && (
+								<p role="alert" className="login-error">
+									{error}
+								</p>
+							)}
+							<label className="login-field">
+								recovery key
+								<Input
+									value={recoveryKeyInput}
+									onChange={(e) => setRecoveryKeyInput(e.target.value)}
+								/>
+							</label>
+							<Button type="submit">recover</Button>
+						</form>
+					)}
+					<ul>
+						{roomList.map((r) => (
+							<li key={r.roomId}>
+								<button
+									type="button"
+									className="room-item"
+									onClick={async () => {
+										setOpenRoom(r.roomId);
+										setHistory(await roomMessages(r.roomId));
+									}}
+								>
+									<span className="room-item__avatar" aria-hidden="true">
+										{initials(r.name)}
+									</span>
+									<span className="room-item__main">
+										<span className="room-item__name">{r.name}</span>
+									</span>
+								</button>
+							</li>
+						))}
+					</ul>
+				</aside>
+				<section className="shell__conversation" />
 			</main>
 		);
 	}

@@ -89,3 +89,29 @@ describe("room list", () => {
 		expect(item.querySelector(".room-item__name")?.textContent).toBe("General");
 	});
 });
+
+describe("chat shell", () => {
+	it("lays out the post-login view as a fixed rail and a fluid conversation pane", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi
+			.fn()
+			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
+		const user = userEvent.setup();
+		render(<App login={login} rooms={rooms} />);
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		const shell = await screen.findByRole("main");
+		expect(shell).toHaveClass("shell");
+		expect(shell.querySelector(".shell__rail")).not.toBeNull();
+		expect(shell.querySelector(".shell__conversation")).not.toBeNull();
+	});
+});
