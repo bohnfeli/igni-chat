@@ -80,17 +80,15 @@ async fn login(
         .map_err(|e| e.to_string())?;
 
     let app_for_events = app.clone();
-    let own_user_id = response.user_id.to_string();
     client.add_event_handler(
         move |ev: OriginalSyncRoomMessageEvent, room: Room| {
             let app = app_for_events.clone();
-            let own_user_id = own_user_id.clone();
             async move {
                 if let Some(msg) = live_message(
                     ev.sender.as_ref(),
-                    &own_user_id,
                     &ev.content.msgtype,
                     room.room_id().as_ref(),
+                    ev.unsigned.transaction_id.as_ref().map(|t| t.as_str()),
                 ) {
                     let _ = app.emit("message", msg);
                 }
@@ -219,13 +217,16 @@ async fn recover_key(
 
 // Decide whether an incoming event becomes a live "message" event for the UI.
 // Separated from the handler so the echo-skip / text-only logic has a check.
+// Skip only the remote echo of *this device's* own send: the homeserver echoes
+// the txn id back only to the originating device, so a message the same account
+// sent from another device arrives here with no txn id and must be shown.
 fn live_message(
     sender: &str,
-    own_user_id: &str,
     msgtype: &MessageType,
     room_id: &str,
+    transaction_id: Option<&str>,
 ) -> Option<LiveMessage> {
-    if sender == own_user_id {
+    if transaction_id.is_some() {
         return None;
     }
     let MessageType::Text(text) = msgtype else {
@@ -262,7 +263,7 @@ mod tests {
     fn emits_a_text_message_from_another_user() {
         let text = MessageType::Text(TextMessageEventContent::plain("hi"));
         assert_eq!(
-            live_message("@bob:localhost", "@me:localhost", &text, "!room:localhost"),
+            live_message("@bob:localhost", &text, "!room:localhost", None),
             Some(LiveMessage {
                 room_id: "!room:localhost".into(),
                 sender: "@bob:localhost".into(),
@@ -272,10 +273,23 @@ mod tests {
     }
 
     #[test]
-    fn suppresses_our_own_remote_echo() {
+    fn emits_a_message_sent_from_another_device_of_the_same_account() {
+        let text = MessageType::Text(TextMessageEventContent::plain("from phone"));
+        assert_eq!(
+            live_message("@me:localhost", &text, "!room:localhost", None),
+            Some(LiveMessage {
+                room_id: "!room:localhost".into(),
+                sender: "@me:localhost".into(),
+                body: "from phone".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn suppresses_the_remote_echo_of_this_devices_own_send() {
         let text = MessageType::Text(TextMessageEventContent::plain("hi"));
         assert_eq!(
-            live_message("@me:localhost", "@me:localhost", &text, "!room:localhost"),
+            live_message("@me:localhost", &text, "!room:localhost", Some("txn-1")),
             None
         );
     }
