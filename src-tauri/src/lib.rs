@@ -155,11 +155,37 @@ async fn send_message(
     Ok(())
 }
 
+#[tauri::command]
+async fn recover_key(
+    state: tauri::State<'_, AppState>,
+    recovery_key: String,
+) -> Result<(), String> {
+    let client = {
+        let guard = state.client.lock().map_err(|e| e.to_string())?;
+        guard
+            .clone()
+            .ok_or_else(|| "not logged in".to_string())?
+    };
+    client
+        .encryption()
+        .recovery()
+        .recover(&recovery_key)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![login, rooms, room_messages, send_message])
+        .invoke_handler(tauri::generate_handler![
+            login,
+            rooms,
+            room_messages,
+            send_message,
+            recover_key
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
