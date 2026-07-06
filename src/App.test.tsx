@@ -73,4 +73,35 @@ describe("App", () => {
 		expect(await screen.findByText("bad credentials")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
 	});
+
+	it("renders the room history when a room is clicked", async () => {
+		const login = vi.fn().mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+		const rooms = vi
+			.fn()
+			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
+		const roomMessages = vi.fn().mockResolvedValue([
+			{ sender: "@igni:localhost", body: "hello" },
+			{ sender: "@bob:localhost", body: "world" },
+		]);
+		const user = userEvent.setup();
+
+		render(<App login={login} rooms={rooms} roomMessages={roomMessages} />);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		await user.click(await screen.findByRole("button", { name: "General" }));
+
+		expect(await screen.findByText(/hello/)).toBeInTheDocument();
+		expect(await screen.findByText(/world/)).toBeInTheDocument();
+		expect(roomMessages).toHaveBeenCalledWith("!general:localhost");
+	});
 });

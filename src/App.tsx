@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
 	login as matrixLogin,
 	rooms as matrixRooms,
+	roomMessages as matrixRoomMessages,
+	type Message,
 	type Room,
 } from "./matrix";
 import { Button } from "./components/Button";
@@ -13,16 +15,34 @@ import "./styles/login.css";
 function App({
 	login = matrixLogin,
 	rooms = matrixRooms,
+	roomMessages = matrixRoomMessages,
 }: {
 	login?: typeof matrixLogin;
 	rooms?: typeof matrixRooms;
+	roomMessages?: typeof matrixRoomMessages;
 }) {
 	const [homeserverUrl, setHomeserverUrl] = useState("");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [userId, setUserId] = useState<string | null>(null);
 	const [roomList, setRoomList] = useState<Room[]>([]);
+	const [openRoom, setOpenRoom] = useState<string | null>(null);
+	const [history, setHistory] = useState<Message[]>([]);
 	const [error, setError] = useState<string | null>(null);
+
+	if (openRoom) {
+		return (
+			<main>
+				<ul>
+					{history.map((m, i) => (
+						<li key={i}>
+							<strong>{m.sender}</strong>: {m.body}
+						</li>
+					))}
+				</ul>
+			</main>
+		);
+	}
 
 	if (userId) {
 		return (
@@ -30,7 +50,17 @@ function App({
 				<p>{userId}</p>
 				<ul>
 					{roomList.map((r) => (
-						<li key={r.roomId}>{r.name}</li>
+						<li key={r.roomId}>
+							<button
+								type="button"
+								onClick={async () => {
+									setOpenRoom(r.roomId);
+									setHistory(await roomMessages(r.roomId));
+								}}
+							>
+								{r.name}
+							</button>
+						</li>
 					))}
 				</ul>
 			</main>
