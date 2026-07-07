@@ -5,7 +5,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login, tauriBackend, isTauri } from "./matrix";
+import { login, tauriBackend, isTauri, createBackend } from "./matrix";
 
 describe("login", () => {
 	beforeEach(() => {
@@ -50,6 +50,19 @@ describe("isTauri", () => {
 	it("returns false when __TAURI_INTERNALS__ is absent", () => {
 		delete g.__TAURI_INTERNALS__;
 		expect(isTauri()).toBe(false);
+	});
+});
+
+describe("createBackend", () => {
+	const g = globalThis as { __TAURI_INTERNALS__?: unknown };
+
+	afterEach(() => {
+		delete g.__TAURI_INTERNALS__;
+	});
+
+	it("returns the tauri backend when running under Tauri", () => {
+		g.__TAURI_INTERNALS__ = {};
+		expect(createBackend()).toBe(tauriBackend);
 	});
 });
 
