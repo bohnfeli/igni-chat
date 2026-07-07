@@ -15,7 +15,6 @@ describe("App", () => {
 			deviceId: "DEVID",
 		});
 		const user = userEvent.setup();
-
 		render(<App login={login} />);
 
 		await user.type(
@@ -44,7 +43,6 @@ describe("App", () => {
 			{ roomId: "!random:localhost", name: "Random" },
 		]);
 		const user = userEvent.setup();
-
 		render(<App login={login} rooms={rooms} />);
 
 		await user.type(
@@ -63,7 +61,6 @@ describe("App", () => {
 	it("shows the error message and keeps the form when login fails", async () => {
 		const login = vi.fn().mockRejectedValue("bad credentials");
 		const user = userEvent.setup();
-
 		render(<App login={login} />);
 
 		await user.type(
@@ -91,7 +88,6 @@ describe("App", () => {
 			{ sender: "@bob:localhost", body: "world" },
 		]);
 		const user = userEvent.setup();
-
 		render(<App login={login} rooms={rooms} roomMessages={roomMessages} />);
 
 		await user.type(
@@ -120,7 +116,6 @@ describe("App", () => {
 		const roomMessages = vi.fn().mockResolvedValue([]);
 		const sendMessage = vi.fn().mockResolvedValue(undefined);
 		const user = userEvent.setup();
-
 		render(
 			<App
 				login={login}
@@ -161,7 +156,6 @@ describe("App", () => {
 		const roomMessages = vi.fn().mockResolvedValue([]);
 		const sendMessage = vi.fn().mockRejectedValue("send failed");
 		const user = userEvent.setup();
-
 		render(
 			<App
 				login={login}
@@ -210,7 +204,6 @@ describe("App", () => {
 				},
 			);
 		const user = userEvent.setup();
-
 		render(
 			<App
 				login={login}
@@ -247,7 +240,6 @@ describe("App", () => {
 		const rooms = vi.fn().mockResolvedValue([]);
 		const recoverKey = vi.fn().mockResolvedValue(undefined);
 		const user = userEvent.setup();
-
 		render(<App login={login} rooms={rooms} recoverKey={recoverKey} />);
 
 		await user.type(
