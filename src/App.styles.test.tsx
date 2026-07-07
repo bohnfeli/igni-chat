@@ -15,6 +15,7 @@ const loginCss = loginRaw.replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ");
 describe("app base styling", () => {
 	it("loads design tokens and drives body styles from them", () => {
 		render(<App />);
+
 		const css = Array.from(document.querySelectorAll("style"))
 			.map((s) => s.textContent ?? "")
 			.join("");
@@ -25,6 +26,7 @@ describe("app base styling", () => {
 
 	it("renders the submit button from the Button atom", () => {
 		render(<App />);
+
 		expect(screen.getByRole("button", { name: /log in/i })).toHaveClass(
 			"button--primary",
 		);
@@ -32,6 +34,7 @@ describe("app base styling", () => {
 
 	it("renders fields from the Input atom", () => {
 		render(<App />);
+
 		expect(screen.getByLabelText(/homeserver/i)).toHaveClass("input");
 	});
 
@@ -52,6 +55,7 @@ describe("recovery form", () => {
 		const recoverKey = vi.fn().mockResolvedValue(undefined);
 		const user = userEvent.setup();
 		render(<App login={login} rooms={rooms} recoverKey={recoverKey} />);
+
 		await user.type(
 			screen.getByLabelText(/homeserver/i),
 			"http://localhost:8008",
@@ -78,6 +82,7 @@ describe("room list", () => {
 			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
 		const user = userEvent.setup();
 		render(<App login={login} rooms={rooms} />);
+
 		await user.type(
 			screen.getByLabelText(/homeserver/i),
 			"http://localhost:8008",
@@ -106,6 +111,7 @@ describe("chat shell", () => {
 			.mockResolvedValue([{ roomId: "!general:localhost", name: "General" }]);
 		const user = userEvent.setup();
 		render(<App login={login} rooms={rooms} />);
+
 		await user.type(
 			screen.getByLabelText(/homeserver/i),
 			"http://localhost:8008",
@@ -148,6 +154,7 @@ describe("conversation view", () => {
 		render(
 			<App login={login} rooms={rooms} roomMessages={overrides.roomMessages} />,
 		);
+
 		await user.type(
 			screen.getByLabelText(/homeserver/i),
 			"http://localhost:8008",
@@ -156,6 +163,7 @@ describe("conversation view", () => {
 		await user.type(screen.getByLabelText(/password/i), "dev-password");
 		await user.click(screen.getByRole("button", { name: /log in/i }));
 		await user.click(await screen.findByRole("button", { name: "General" }));
+
 		return user;
 	}
 
@@ -170,20 +178,25 @@ describe("conversation view", () => {
 
 		const theirs = (await screen.findByText(/theirs/)).closest(".bubble");
 		expect(theirs).toHaveClass("bubble--received");
+
 		const mine = screen.getByText(/mine/).closest(".bubble");
 		expect(mine).toHaveClass("bubble--sent");
 	});
 
 	it("shows an encryption chip on the conversation header", async () => {
 		await openRoom({ roomMessages: () => Promise.resolve([]) });
+
 		expect(screen.getByText(/encrypted/i)).toHaveClass("chip");
 	});
 
 	it("disables the send button until the composer has text", async () => {
 		const user = await openRoom({ roomMessages: () => Promise.resolve([]) });
+
 		const send = screen.getByRole("button", { name: /send/i });
 		expect(send).toBeDisabled();
+
 		await user.type(screen.getByLabelText(/message/i), "hello");
+
 		expect(send).not.toBeDisabled();
 	});
 });
