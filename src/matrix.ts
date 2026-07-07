@@ -29,6 +29,10 @@ export function createBackend(): MatrixBackend {
 	throw new Error("no Matrix backend configured for this environment");
 }
 
+export const demoBackend: MatrixBackend = {
+	login: async () => ({ userId: "@demo:localhost", deviceId: "DEMO" }),
+};
+
 export function login(
 	homeserverUrl: string,
 	username: string,

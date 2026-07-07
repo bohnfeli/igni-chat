@@ -5,7 +5,13 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login, tauriBackend, isTauri, createBackend } from "./matrix";
+import {
+	login,
+	tauriBackend,
+	isTauri,
+	createBackend,
+	demoBackend,
+} from "./matrix";
 
 describe("login", () => {
 	beforeEach(() => {
@@ -85,5 +91,14 @@ describe("tauriBackend.login", () => {
 			password: "pw",
 		});
 		expect(result).toEqual({ userId: "@igni:localhost", deviceId: "DEVID" });
+	});
+});
+
+describe("demoBackend.login", () => {
+	it("returns a canned login result without contacting a server", async () => {
+		await expect(demoBackend.login("http://h", "u", "p")).resolves.toEqual({
+			userId: "@demo:localhost",
+			deviceId: "DEMO",
+		});
 	});
 });
