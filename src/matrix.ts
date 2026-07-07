@@ -22,9 +22,31 @@ export function isTauri(): boolean {
 	return "__TAURI_INTERNALS__" in globalThis;
 }
 
+function wasmRequested(): boolean {
+	return import.meta.env.VITE_MATRIX_BACKEND === "wasm";
+}
+
+export const wasmBackend: MatrixBackend = {
+	login: async (homeserverUrl, username, password) => {
+		const wasm = (await import("../src-wasm/pkg/igni_matrix_wasm.js")) as unknown as {
+			default: () => Promise<unknown>;
+			login: (
+				homeserverUrl: string,
+				username: string,
+				password: string,
+			) => Promise<LoginResult>;
+		};
+		await wasm.default();
+		return wasm.login(homeserverUrl, username, password);
+	},
+};
+
 export function createBackend(): MatrixBackend {
 	if (isTauri()) {
 		return tauriBackend;
+	}
+	if (wasmRequested()) {
+		return wasmBackend;
 	}
 	if (import.meta.env.DEV) {
 		return demoBackend;

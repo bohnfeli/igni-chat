@@ -4,6 +4,12 @@ vi.mock("@tauri-apps/api/core", () => ({
 	invoke: vi.fn(),
 }));
 
+const wasmMock = vi.hoisted(() => ({
+	default: vi.fn(),
+	login: vi.fn(),
+}));
+vi.mock("../src-wasm/pkg/igni_matrix_wasm.js", () => wasmMock);
+
 import { invoke } from "@tauri-apps/api/core";
 import {
 	login,
@@ -11,6 +17,7 @@ import {
 	isTauri,
 	createBackend,
 	demoBackend,
+	wasmBackend,
 } from "./matrix";
 
 describe("login", () => {
@@ -116,5 +123,42 @@ describe("demoBackend.login", () => {
 			userId: "@demo:localhost",
 			deviceId: "DEMO",
 		});
+	});
+});
+
+describe("createBackend (wasm)", () => {
+	const env = import.meta.env as Record<string, unknown>;
+	const g = globalThis as { __TAURI_INTERNALS__?: unknown };
+
+	afterEach(() => {
+		delete env.VITE_MATRIX_BACKEND;
+		delete g.__TAURI_INTERNALS__;
+	});
+
+	it("returns the wasm backend when VITE_MATRIX_BACKEND=wasm", () => {
+		env.VITE_MATRIX_BACKEND = "wasm";
+		expect(createBackend()).toBe(wasmBackend);
+	});
+});
+
+describe("wasmBackend.login", () => {
+	beforeEach(() => {
+		wasmMock.default.mockResolvedValue(undefined);
+		wasmMock.login.mockResolvedValue({
+			userId: "@w:local",
+			deviceId: "WASM",
+		});
+	});
+	afterEach(() => {
+		wasmMock.default.mockReset();
+		wasmMock.login.mockReset();
+	});
+
+	it("inits the wasm module then calls its login and returns the typed result", async () => {
+		const result = await wasmBackend.login("http://h", "u", "p");
+
+		expect(wasmMock.default).toHaveBeenCalledTimes(1);
+		expect(wasmMock.login).toHaveBeenCalledWith("http://h", "u", "p");
+		expect(result).toEqual({ userId: "@w:local", deviceId: "WASM" });
 	});
 });
