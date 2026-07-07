@@ -18,6 +18,10 @@ export const tauriBackend: MatrixBackend = {
 		invoke<LoginResult>("login", { homeserverUrl, username, password }),
 };
 
+export function isTauri(): boolean {
+	return "__TAURI_INTERNALS__" in globalThis;
+}
+
 export function login(
 	homeserverUrl: string,
 	username: string,

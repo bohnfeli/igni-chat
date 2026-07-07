@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@tauri-apps/api/core", () => ({
 	invoke: vi.fn(),
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login, tauriBackend } from "./matrix";
+import { login, tauriBackend, isTauri } from "./matrix";
 
 describe("login", () => {
 	beforeEach(() => {
@@ -32,6 +32,24 @@ describe("login", () => {
 		vi.mocked(invoke).mockRejectedValue("bad credentials");
 
 		await expect(login("u", "n", "p")).rejects.toBe("bad credentials");
+	});
+});
+
+describe("isTauri", () => {
+	const g = globalThis as { __TAURI_INTERNALS__?: unknown };
+
+	afterEach(() => {
+		delete g.__TAURI_INTERNALS__;
+	});
+
+	it("returns true when __TAURI_INTERNALS__ is present", () => {
+		g.__TAURI_INTERNALS__ = {};
+		expect(isTauri()).toBe(true);
+	});
+
+	it("returns false when __TAURI_INTERNALS__ is absent", () => {
+		delete g.__TAURI_INTERNALS__;
+		expect(isTauri()).toBe(false);
 	});
 });
 
