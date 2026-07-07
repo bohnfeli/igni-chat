@@ -1,12 +1,14 @@
 import { useState } from "react";
 import {
 	login as matrixLogin,
-	onMessage as matrixOnMessage,
 	recoverKey as matrixRecoverKey,
+} from "./features/login/matrix";
+import {
+	onMessage as matrixOnMessage,
 	rooms as matrixRooms,
 	roomMessages as matrixRoomMessages,
 	sendMessage as matrixSendMessage,
-} from "./matrix";
+} from "./features/chat/matrix";
 import { Login } from "./features/login/Login";
 import { RoomList } from "./features/chat/RoomList";
 import { Conversation } from "./features/chat/Conversation";

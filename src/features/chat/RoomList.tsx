@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
-import type { recoverKey as matrixRecoverKey, Room } from "../../matrix";
+import type { recoverKey as matrixRecoverKey } from "../login/matrix";
+import type { Room } from "./matrix";
 
 export type RoomListProps = {
 	userId: string;

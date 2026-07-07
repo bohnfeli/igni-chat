@@ -5,7 +5,7 @@ import type {
 	roomMessages as matrixRoomMessages,
 	sendMessage as matrixSendMessage,
 	Message,
-} from "../../matrix";
+} from "./matrix";
 
 export type ConversationProps = {
 	openRoom: string;

@@ -3,7 +3,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
-import type { LoginResult, Message, Room } from "./matrix";
+import type { LoginResult } from "./features/login/matrix";
+import type { Message, Room } from "./features/chat/matrix";
 import loginRaw from "./styles/login.css?raw";
 
 vi.mock("@tauri-apps/api/event", () => ({
