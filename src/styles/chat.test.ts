@@ -24,6 +24,13 @@ describe("message bubble styling", () => {
 	});
 });
 
+describe("timeline styling", () => {
+	it("renders bubbles without ordered-list numbers", () => {
+		expect(css).toContain(".timeline");
+		expect(css).toContain("list-style: none");
+	});
+});
+
 describe("composer styling", () => {
 	it("pins a surface field with an ember full-radius send disc", () => {
 		expect(css).toContain(".composer");
