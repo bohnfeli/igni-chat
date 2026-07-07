@@ -26,6 +26,9 @@ export function createBackend(): MatrixBackend {
 	if (isTauri()) {
 		return tauriBackend;
 	}
+	if (import.meta.env.DEV) {
+		return demoBackend;
+	}
 	throw new Error("no Matrix backend configured for this environment");
 }
 

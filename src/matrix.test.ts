@@ -70,6 +70,22 @@ describe("createBackend", () => {
 		g.__TAURI_INTERNALS__ = {};
 		expect(createBackend()).toBe(tauriBackend);
 	});
+
+	it("returns the demo backend in a non-Tauri dev environment", () => {
+		delete g.__TAURI_INTERNALS__;
+		expect(createBackend()).toBe(demoBackend);
+	});
+
+	it("throws in a non-Tauri production build", () => {
+		delete g.__TAURI_INTERNALS__;
+		const dev = import.meta.env.DEV;
+		import.meta.env.DEV = false;
+		try {
+			expect(() => createBackend()).toThrow(/no Matrix backend/);
+		} finally {
+			import.meta.env.DEV = dev;
+		}
+	});
 });
 
 describe("tauriBackend.login", () => {
