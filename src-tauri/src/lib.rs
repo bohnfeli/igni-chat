@@ -1,3 +1,5 @@
+// ponytail: matrix-rust-sdk async macros expand types past the default
+// recursion limit (128); removing this errors with E0275 on ExportedSessionKey.
 #![recursion_limit = "256"]
 
 use std::sync::Mutex;
@@ -14,6 +16,9 @@ use tauri::Emitter;
 
 #[derive(Default)]
 struct AppState {
+    // ponytail: holds the logged-in client *handle* only — the SDK owns its own
+    // session/crypto/store state (Arc-internally, thread-safe). This Mutex just
+    // guards the None->Some slot across Tauri commands and is never held across .await.
     client: Mutex<Option<matrix_sdk::Client>>,
 }
 
@@ -46,6 +51,49 @@ struct MessageInfo {
     body: String,
 }
 
+fn client(state: &tauri::State<'_, AppState>) -> Result<matrix_sdk::Client, String> {
+    state
+        .client
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone()
+        .ok_or_else(|| "not logged in".to_string())
+}
+
+async fn build_client(homeserver_url: &str) -> Result<matrix_sdk::Client, String> {
+    matrix_sdk::Client::builder()
+        .homeserver_url(homeserver_url)
+        .build()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+fn register_live_message_handler(client: &matrix_sdk::Client, app: tauri::AppHandle) {
+    client.add_event_handler(
+        move |ev: OriginalSyncRoomMessageEvent, room: Room| {
+            let app = app.clone();
+            async move {
+                if let Some(msg) = live_message(
+                    ev.sender.as_ref(),
+                    &ev.content.msgtype,
+                    room.room_id().as_ref(),
+                    ev.unsigned.transaction_id.as_ref().map(|t| t.as_str()),
+                ) {
+                    let _ = app.emit("message", msg);
+                }
+            }
+        },
+    );
+}
+
+fn spawn_sync_loop(client: matrix_sdk::Client) {
+    tauri::async_runtime::spawn(async move {
+        // ponytail: sync forever, ignore transient errors so live updates
+        // survive a blip. sync() resumes from the stored token.
+        let _ = client.sync(SyncSettings::default()).await;
+    });
+}
+
 #[tauri::command]
 async fn login(
     state: tauri::State<'_, AppState>,
@@ -54,11 +102,7 @@ async fn login(
     username: String,
     password: String,
 ) -> Result<LoginResult, String> {
-    let client = matrix_sdk::Client::builder()
-        .homeserver_url(homeserver_url)
-        .build()
-        .await
-        .map_err(|e| e.to_string())?;
+    let client = build_client(&homeserver_url).await?;
     let response = client
         .matrix_auth()
         .login_username(&username, &password)
@@ -79,29 +123,8 @@ async fn login(
         .await
         .map_err(|e| e.to_string())?;
 
-    let app_for_events = app.clone();
-    client.add_event_handler(
-        move |ev: OriginalSyncRoomMessageEvent, room: Room| {
-            let app = app_for_events.clone();
-            async move {
-                if let Some(msg) = live_message(
-                    ev.sender.as_ref(),
-                    &ev.content.msgtype,
-                    room.room_id().as_ref(),
-                    ev.unsigned.transaction_id.as_ref().map(|t| t.as_str()),
-                ) {
-                    let _ = app.emit("message", msg);
-                }
-            }
-        },
-    );
-
-    let loop_client = client.clone();
-    tauri::async_runtime::spawn(async move {
-        // ponytail: sync forever, ignore transient errors so live updates
-        // survive a blip. sync() resumes from the stored token.
-        let _ = loop_client.sync(SyncSettings::default()).await;
-    });
+    register_live_message_handler(&client, app);
+    spawn_sync_loop(client.clone());
 
     *state.client.lock().map_err(|e| e.to_string())? = Some(client);
     Ok(LoginResult {
@@ -112,12 +135,7 @@ async fn login(
 
 #[tauri::command]
 async fn rooms(state: tauri::State<'_, AppState>) -> Result<Vec<RoomInfo>, String> {
-    let client = {
-        let guard = state.client.lock().map_err(|e| e.to_string())?;
-        guard
-            .clone()
-            .ok_or_else(|| "not logged in".to_string())?
-    };
+    let client = client(&state)?;
     Ok(client
         .rooms()
         .into_iter()
@@ -136,14 +154,8 @@ async fn room_messages(
     state: tauri::State<'_, AppState>,
     room_id: String,
 ) -> Result<Vec<MessageInfo>, String> {
-    let client = {
-        let guard = state.client.lock().map_err(|e| e.to_string())?;
-        guard
-            .clone()
-            .ok_or_else(|| "not logged in".to_string())?
-    };
-    let room_id =
-        RoomId::parse(&room_id).map_err(|e| e.to_string())?;
+    let client = client(&state)?;
+    let room_id = RoomId::parse(&room_id).map_err(|e| e.to_string())?;
     let room = client
         .get_room(&room_id)
         .ok_or_else(|| "room not found".to_string())?;
@@ -179,12 +191,7 @@ async fn send_message(
     room_id: String,
     body: String,
 ) -> Result<(), String> {
-    let client = {
-        let guard = state.client.lock().map_err(|e| e.to_string())?;
-        guard
-            .clone()
-            .ok_or_else(|| "not logged in".to_string())?
-    };
+    let client = client(&state)?;
     let room_id = RoomId::parse(&room_id).map_err(|e| e.to_string())?;
     let room = client
         .get_room(&room_id)
@@ -200,12 +207,7 @@ async fn recover_key(
     state: tauri::State<'_, AppState>,
     recovery_key: String,
 ) -> Result<(), String> {
-    let client = {
-        let guard = state.client.lock().map_err(|e| e.to_string())?;
-        guard
-            .clone()
-            .ok_or_else(|| "not logged in".to_string())?
-    };
+    let client = client(&state)?;
     client
         .encryption()
         .recovery()
