@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { login as matrixLogin } from "./matrix";
+import { createBackend, type MatrixBackend } from "./matrix";
 import { Button } from "./components/Button";
 import { Input } from "./components/Input";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/login.css";
 
-function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
+function App({ login }: { login?: MatrixBackend["login"] }) {
 	const [homeserverUrl, setHomeserverUrl] = useState("");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -24,8 +24,9 @@ function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
 	const onSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		setError(null);
+		const doLogin = login ?? createBackend().login;
 		try {
-			const result = await login(homeserverUrl, username, password);
+			const result = await doLogin(homeserverUrl, username, password);
 			setUserId(result.userId);
 		} catch (e) {
 			setError(String(e));
