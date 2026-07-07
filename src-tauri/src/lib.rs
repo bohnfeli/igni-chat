@@ -1,7 +1,3 @@
-// ponytail: matrix-rust-sdk async macros expand types past the default
-// recursion limit (128); removing this errors with E0275 on ExportedSessionKey.
-#![recursion_limit = "256"]
-
 use std::sync::Mutex;
 
 use matrix_sdk::config::SyncSettings;
