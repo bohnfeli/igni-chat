@@ -14,16 +14,16 @@ breathes end-to-end, not a feature-complete Element replacement.
 
 1. Ship a thin end-to-end tracer bullet: login → sync → list rooms → open a
 
-   room → see history → send a message → receive a live message → E2EE works
+  room → see history → send a message → receive a live message → E2EE works
 
    transparently. One wire, lit up.
 2. Keep the UI↔SDK boundary a clean interface (Tauri command layer) so a future
 
-   WASM/web build can slot in without rewriting the frontend.
+  WASM/web build can slot in without rewriting the frontend.
 3. Keep the codebase clean and minimal — be the anti-Element, not a second one.
 4. Develop and test against a local Synapse instance (full control, E2EE
 
-   testable, no risk to real accounts).
+  testable, no risk to real accounts).
 
 ## Stakeholders
 
@@ -129,6 +129,7 @@ be refactored first ask for permission
   separation and strict Arrange→Act→Assert ordering; never interleave
   assertions with actions. No `// Arrange` markers — the project has a
   no-comments rule.
+- Use the **Five-Why** Method to debug and find the root-cause of errors
 
 ---
 
