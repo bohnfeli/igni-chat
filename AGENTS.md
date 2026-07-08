@@ -117,3 +117,42 @@ breathes end-to-end, not a feature-complete Element replacement.
   that never had to be written. Every line of code is a liability — it must be
 - Stay aligned to what already exists (**DRY**). If there is something that should
 be refactored first ask for permission
+
+---
+
+## Code Conventions
+
+### Object binding vs. free functions (Rust)
+
+Operations that **share state** are bound to a struct that holds that state;
+**stateless** helpers stay free functions. Do NOT wrap stateless logic in a
+dummy unit struct (`struct Foo; impl Foo { fn bar() }`) just to avoid a free
+function — an object with no state is an anti-pattern (KISS/YAGNI).
+
+Why: Rust free functions are idiomatic for stateless transforms (cf. `std`,
+`matrix-sdk`). The object-oriented boundary in this project lives at the
+**UI↔SDK seam** (the `MatrixBackend` interface and its `*Backend` objects on
+the TS side), not inside Rust plumbing. A Rust free function behind a Tauri
+command is an implementation detail, not the API surface.
+
+Applied: `igni_matrix::login` is a free function today (it is stateless — it
+builds a `Client`, authenticates, returns a `LoginResult`). When **sync**
+lands, multiple operations must reuse the same authenticated `Client`; at that
+point introduce a session struct holding the `Client` and bind login/sync/send
+to it. That refactor is part of "add sync", not a speculative change now.
+
+### Test file layout
+
+Each language keeps its **native** test idiom — they are not force-aligned:
+
+- **TypeScript:** co-located `foo.test.ts(x)` next to `foo.ts(x)`.
+- **Rust:** inline `#[cfg(test)] mod tests { ... }` at the bottom of the module
+  under test. Use the `tests/` directory only for **integration** tests that
+  exercise the crate's public API as an external consumer.
+
+Why: Rust's inline `mod tests` has real advantages — access to private items,
+zero code in release builds, true colocation. The TS `.test.ts` convention
+exists because JS has no conditional compilation or private-item access in the
+same way. Mechanical cross-language uniformity would trade Rust's advantages
+for marginal consistency; the seam/colocation goal is already met by each
+idiom independently.
