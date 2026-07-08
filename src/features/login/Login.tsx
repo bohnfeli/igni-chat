@@ -2,10 +2,10 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
-import type { login as matrixLogin } from "./matrix";
+import type { MatrixBackend } from "./matrix";
 
 export type LoginProps = {
-	login: typeof matrixLogin;
+	login: MatrixBackend["login"];
 	onLoggedIn: (userId: string) => void;
 };
 

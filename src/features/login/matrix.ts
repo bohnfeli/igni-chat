@@ -51,14 +51,6 @@ export const demoBackend: MatrixBackend = {
 	login: async () => ({ userId: "@demo:localhost", deviceId: "DEMO" }),
 };
 
-export function login(
-	homeserverUrl: string,
-	username: string,
-	password: string,
-): Promise<LoginResult> {
-	return tauriBackend.login(homeserverUrl, username, password);
-}
-
 export function recoverKey(recoveryKey: string): Promise<void> {
 	return invoke<void>("recover_key", { recoveryKey });
 }
