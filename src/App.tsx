@@ -1,8 +1,6 @@
 import { useState } from "react";
-import {
-	login as matrixLogin,
-	recoverKey as matrixRecoverKey,
-} from "./features/login/matrix";
+import { createBackend, type MatrixBackend } from "./features/login/matrix";
+import { recoverKey as matrixRecoverKey } from "./features/login/matrix";
 import {
 	onMessage as matrixOnMessage,
 	rooms as matrixRooms,
@@ -18,14 +16,14 @@ import "./styles/login.css";
 import "./styles/chat.css";
 
 export default function App({
-	login = matrixLogin,
+	login = createBackend().login,
 	onMessage = matrixOnMessage,
 	recoverKey = matrixRecoverKey,
 	rooms = matrixRooms,
 	roomMessages = matrixRoomMessages,
 	sendMessage = matrixSendMessage,
 }: {
-	login?: typeof matrixLogin;
+	login?: MatrixBackend["login"];
 	onMessage?: typeof matrixOnMessage;
 	recoverKey?: typeof matrixRecoverKey;
 	rooms?: typeof matrixRooms;

@@ -39,6 +39,28 @@ is out of scope for v1).
 - **Dev Synapse:** docker-compose homeserver for testing (including E2EE);
   provision via `./dev/synapse/provision.sh`.
 
+## Browser debugging (Chromium)
+
+The UI↔SDK seam is swappable via `createBackend()` (see `src/matrix.ts`):
+
+- **Under Tauri** (`pnpm tauri dev`): uses `tauriBackend` → real Matrix over
+  Tauri commands. This is where E2EE is verified.
+- **In a plain browser** (`pnpm dev`, then open
+  [http://localhost:1420](http://localhost:1420) in Chromium): uses
+  `demoBackend`, which returns a canned login result — no server needed.
+  This lets the agent drive and verify the **frontend** in Chromium (DevTools,
+  headless) without the Tauri webview. It cannot verify E2EE (no real crypto).
+- **Real in-browser backend (matrix-rust-sdk compiled to WASM):** build the
+  binding once with `pnpm build:wasm`, then run
+  `VITE_MATRIX_BACKEND=wasm pnpm dev` and open Chromium. `createBackend()` now
+  selects `wasmBackend`, so login (and, once sync lands, E2EE) runs the real
+  SDK in the browser — the path for verifying the crypto flow in Chromium.
+  Requires a reachable Synapse (`dev/synapse`).
+
+A production browser build with no backend throws a clear error; the real
+in-browser Matrix backend (matrix-rust-sdk compiled to WASM) is the deferred
+Phase C work (see `ketchup-plan.md`).
+
 ## Contributing
 
 > Placeholder — personal project for now; conventions land as the codebase does.

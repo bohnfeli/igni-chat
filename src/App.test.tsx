@@ -75,6 +75,21 @@ describe("App", () => {
 		expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
 	});
 
+	it("uses the configured backend's login by default (demoBackend in dev)", async () => {
+		const user = userEvent.setup();
+		render(<App />);
+
+		await user.type(
+			screen.getByLabelText(/homeserver/i),
+			"http://localhost:8008",
+		);
+		await user.type(screen.getByLabelText(/username/i), "igni");
+		await user.type(screen.getByLabelText(/password/i), "dev-password");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		expect(await screen.findByText("@demo:localhost")).toBeInTheDocument();
+	});
+
 	it("renders the room history when a room is clicked", async () => {
 		const login = vi.fn().mockResolvedValue({
 			userId: "@igni:localhost",

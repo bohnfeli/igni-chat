@@ -1,0 +1,25 @@
+[package]
+name = "igni-matrix"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+native = ["matrix-sdk/sqlite", "matrix-sdk/automatic-room-key-forwarding"]
+wasm = ["matrix-sdk/js"]
+
+[dependencies]
+matrix-sdk = { version = "0.18", default-features = false, features = ["e2e-encryption"] }
+serde = { version = "1", features = ["derive"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
+uuid = { version = "1", features = ["rng-getrandom"] }
+
+[dev-dependencies]
+serde_json = "1"

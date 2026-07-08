@@ -133,6 +133,44 @@ be refactored first ask for permission
 
 ---
 
+## Code Conventions
+
+### Object binding vs. free functions (Rust)
+
+Operations are **bound to a struct**, not exposed as free functions. The only
+free functions allowed are constructors that build the struct. Rationale: a
+free function that looks "stateless" today is a trap — there is **always
+more**. Any operation on a real client needs the shared authenticated
+`matrix_sdk::Client` (login, sync, send, send-to-device...). Binding up front
+avoids a forced refactor the moment a second operation lands.
+
+Applied: the `igni-matrix` crate exposes `IgniClient`, constructed once and
+holding the live `Client`; `login` (and later sync/send) are methods on it.
+Free functions exist only at the outermost wiring seam (`run()` entry points,
+`#[tauri::command]` shims, the wasm-bindgen wrapper) where a struct would be
+pure ceremony — those translate, they do not own domain logic.
+
+Note: `src-tauri/src/lib.rs` predates this convention and still uses free
+helper functions (`build_client`, `live_message`, ...) plus an inline test
+module. Bring it into compliance as a follow-up refactor, not in a merge.
+
+### Test file layout
+
+Tests live in **separate files** in a `tests/` directory, aligned with the
+TypeScript convention (`foo.test.ts(x)`). Rust unit tests are **not** inlined
+as `#[cfg(test)] mod tests { ... }` at the bottom of the module — that bloats
+the source file and mixes concerns. Keep production code and test code apart.
+
+- **TypeScript:** `src/foo.ts` tested by `src/foo.test.ts(x)`.
+- **Rust:** `src/lib.rs` (or `src/<module>.rs`) tested by
+  `tests/<module>.rs` (integration) or a sibling test module file.
+
+Where private-item access forces an inline test, isolate it in a dedicated
+`#[cfg(test)]` module in its **own** file referenced via `#[path]`, never
+inside the production module body.
+
+---
+
 ## Workflow notes
 
 - **Subagent dispatch:** `ponytail` is a *mode*, not an agent name. Agents here

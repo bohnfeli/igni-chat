@@ -32,10 +32,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri -> target
+          workspaces: |
+            src-tauri -> target
+            src-matrix -> target
+            src-wasm -> target
       - run: pnpm install --frozen-lockfile
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - run: pnpm build:wasm
       - run: pnpm build
       - run: pnpm test
       - run: cargo fmt --check
@@ -46,3 +53,9 @@ jobs:
         working-directory: src-tauri
       - run: cargo test
         working-directory: src-tauri
+      - run: cargo fmt --check
+        working-directory: src-matrix
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: src-matrix
+      - run: cargo test
+        working-directory: src-matrix

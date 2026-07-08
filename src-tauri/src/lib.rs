@@ -10,19 +10,14 @@ use matrix_sdk::ruma::RoomId;
 use matrix_sdk::Room;
 use tauri::Emitter;
 
+use igni_matrix::LoginResult;
+
 #[derive(Default)]
 struct AppState {
     // ponytail: holds the logged-in client *handle* only — the SDK owns its own
     // session/crypto/store state (Arc-internally, thread-safe). This Mutex just
     // guards the None->Some slot across Tauri commands and is never held across .await.
     client: Mutex<Option<matrix_sdk::Client>>,
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct LoginResult {
-    user_id: String,
-    device_id: String,
 }
 
 #[derive(serde::Serialize)]

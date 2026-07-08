@@ -1,39 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@tauri-apps/api/core", () => ({
 	invoke: vi.fn(),
 }));
 
+const wasmMock = vi.hoisted(() => ({
+	default: vi.fn(),
+	login: vi.fn(),
+}));
+vi.mock("../../../src-wasm/pkg/igni_matrix_wasm.js", () => wasmMock);
+
 import { invoke } from "@tauri-apps/api/core";
-import { login, recoverKey } from "./matrix";
-
-describe("login", () => {
-	beforeEach(() => {
-		vi.mocked(invoke).mockReset();
-	});
-
-	it("calls the login command with the fields and returns the parsed result", async () => {
-		vi.mocked(invoke).mockResolvedValue({
-			userId: "@igni:localhost",
-			deviceId: "DEVID",
-		});
-
-		const result = await login("http://localhost:8008", "igni", "dev-password");
-
-		expect(invoke).toHaveBeenCalledWith("login", {
-			homeserverUrl: "http://localhost:8008",
-			username: "igni",
-			password: "dev-password",
-		});
-		expect(result).toEqual({ userId: "@igni:localhost", deviceId: "DEVID" });
-	});
-
-	it("propagates the invoke rejection as the error message", async () => {
-		vi.mocked(invoke).mockRejectedValue("bad credentials");
-
-		await expect(login("u", "n", "p")).rejects.toBe("bad credentials");
-	});
-});
+import {
+	recoverKey,
+	tauriBackend,
+	isTauri,
+	createBackend,
+	demoBackend,
+	wasmBackend,
+} from "./matrix";
 
 describe("recoverKey", () => {
 	beforeEach(() => {
@@ -48,5 +33,120 @@ describe("recoverKey", () => {
 		expect(invoke).toHaveBeenCalledWith("recover_key", {
 			recoveryKey: "EsTL-2n0X-...",
 		});
+	});
+});
+
+describe("isTauri", () => {
+	const g = globalThis as { __TAURI_INTERNALS__?: unknown };
+
+	afterEach(() => {
+		delete g.__TAURI_INTERNALS__;
+	});
+
+	it("returns true when __TAURI_INTERNALS__ is present", () => {
+		g.__TAURI_INTERNALS__ = {};
+		expect(isTauri()).toBe(true);
+	});
+
+	it("returns false when __TAURI_INTERNALS__ is absent", () => {
+		delete g.__TAURI_INTERNALS__;
+		expect(isTauri()).toBe(false);
+	});
+});
+
+describe("createBackend", () => {
+	const g = globalThis as { __TAURI_INTERNALS__?: unknown };
+
+	afterEach(() => {
+		delete g.__TAURI_INTERNALS__;
+	});
+
+	it("returns the tauri backend when running under Tauri", () => {
+		g.__TAURI_INTERNALS__ = {};
+		expect(createBackend()).toBe(tauriBackend);
+	});
+
+	it("returns the demo backend in a non-Tauri dev environment", () => {
+		delete g.__TAURI_INTERNALS__;
+		expect(createBackend()).toBe(demoBackend);
+	});
+
+	it("throws in a non-Tauri production build", () => {
+		delete g.__TAURI_INTERNALS__;
+		const dev = import.meta.env.DEV;
+		import.meta.env.DEV = false;
+		try {
+			expect(() => createBackend()).toThrow(/no Matrix backend/);
+		} finally {
+			import.meta.env.DEV = dev;
+		}
+	});
+});
+
+describe("tauriBackend.login", () => {
+	beforeEach(() => {
+		vi.mocked(invoke).mockReset();
+	});
+
+	it("delegates to the login command with camelCased args and returns the result", async () => {
+		vi.mocked(invoke).mockResolvedValue({
+			userId: "@igni:localhost",
+			deviceId: "DEVID",
+		});
+
+		const result = await tauriBackend.login("http://localhost:8008", "igni", "pw");
+
+		expect(invoke).toHaveBeenCalledWith("login", {
+			homeserverUrl: "http://localhost:8008",
+			username: "igni",
+			password: "pw",
+		});
+		expect(result).toEqual({ userId: "@igni:localhost", deviceId: "DEVID" });
+	});
+});
+
+describe("demoBackend.login", () => {
+	it("returns a canned login result without contacting a server", async () => {
+		await expect(demoBackend.login("http://h", "u", "p")).resolves.toEqual({
+			userId: "@demo:localhost",
+			deviceId: "DEMO",
+		});
+	});
+});
+
+describe("createBackend (wasm)", () => {
+	const env = import.meta.env as Record<string, unknown>;
+	const g = globalThis as { __TAURI_INTERNALS__?: unknown };
+
+	afterEach(() => {
+		delete env.VITE_MATRIX_BACKEND;
+		delete g.__TAURI_INTERNALS__;
+	});
+
+	it("returns the wasm backend when VITE_MATRIX_BACKEND=wasm", () => {
+		env.VITE_MATRIX_BACKEND = "wasm";
+		expect(createBackend()).toBe(wasmBackend);
+	});
+});
+
+describe("wasmBackend.login", () => {
+	beforeEach(() => {
+		wasmMock.default.mockResolvedValue(undefined);
+		wasmMock.login.mockResolvedValue({
+			userId: "@w:local",
+			deviceId: "WASM",
+		});
+	});
+	afterEach(() => {
+		wasmMock.default.mockReset();
+		wasmMock.login.mockReset();
+	});
+
+	it("inits the wasm module then calls its login and returns the typed result", async () => {
+		const result = await wasmBackend.login("http://h", "u", "p");
+
+		expect(wasmMock.default).toHaveBeenCalledTimes(1);
+		expect(wasmMock.login).toHaveBeenCalledWith("http://h", "u", "p");
+		expect(result).toEqual({ userId: "@w:local", deviceId: "WASM" });
 	});
 });
