@@ -48,6 +48,12 @@ The UI↔SDK seam is swappable via `createBackend()` (see `src/matrix.ts`):
   `demoBackend`, which returns a canned login result — no server needed.
   This lets the agent drive and verify the **frontend** in Chromium (DevTools,
   headless) without the Tauri webview. It cannot verify E2EE (no real crypto).
+- **Real in-browser backend (matrix-rust-sdk compiled to WASM):** build the
+  binding once with `pnpm build:wasm`, then run
+  `VITE_MATRIX_BACKEND=wasm pnpm dev` and open Chromium. `createBackend()` now
+  selects `wasmBackend`, so login (and, once sync lands, E2EE) runs the real
+  SDK in the browser — the path for verifying the crypto flow in Chromium.
+  Requires a reachable Synapse (`dev/synapse`).
 
 A production browser build with no backend throws a clear error; the real
 in-browser Matrix backend (matrix-rust-sdk compiled to WASM) is the deferred

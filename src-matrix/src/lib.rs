@@ -42,9 +42,6 @@ mod tests {
             device_id: "DEVID".to_string(),
         };
         let json = serde_json::to_string(&result).expect("serialize");
-        assert_eq!(
-            json,
-            r#"{"userId":"@igni:localhost","deviceId":"DEVID"}"#
-        );
+        assert_eq!(json, r#"{"userId":"@igni:localhost","deviceId":"DEVID"}"#);
     }
 }
