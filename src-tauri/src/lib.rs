@@ -65,21 +65,19 @@ async fn build_client(homeserver_url: &str) -> Result<matrix_sdk::Client, String
 }
 
 fn register_live_message_handler(client: &matrix_sdk::Client, app: tauri::AppHandle) {
-    client.add_event_handler(
-        move |ev: OriginalSyncRoomMessageEvent, room: Room| {
-            let app = app.clone();
-            async move {
-                if let Some(msg) = live_message(
-                    ev.sender.as_ref(),
-                    &ev.content.msgtype,
-                    room.room_id().as_ref(),
-                    ev.unsigned.transaction_id.as_ref().map(|t| t.as_str()),
-                ) {
-                    let _ = app.emit("message", msg);
-                }
+    client.add_event_handler(move |ev: OriginalSyncRoomMessageEvent, room: Room| {
+        let app = app.clone();
+        async move {
+            if let Some(msg) = live_message(
+                ev.sender.as_ref(),
+                &ev.content.msgtype,
+                room.room_id().as_ref(),
+                ev.unsigned.transaction_id.as_ref().map(|t| t.as_str()),
+            ) {
+                let _ = app.emit("message", msg);
             }
-        },
-    );
+        }
+    });
 }
 
 fn spawn_sync_loop(client: matrix_sdk::Client) {
