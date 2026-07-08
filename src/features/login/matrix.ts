@@ -28,14 +28,7 @@ function wasmRequested(): boolean {
 
 export const wasmBackend: MatrixBackend = {
 	login: async (homeserverUrl, username, password) => {
-		const wasm = (await import("../../../src-wasm/pkg/igni_matrix_wasm.js")) as unknown as {
-			default: () => Promise<unknown>;
-			login: (
-				homeserverUrl: string,
-				username: string,
-				password: string,
-			) => Promise<LoginResult>;
-		};
+		const wasm = await import("../../../src-wasm/pkg/igni_matrix_wasm.js");
 		await wasm.default();
 		return wasm.login(homeserverUrl, username, password);
 	},
