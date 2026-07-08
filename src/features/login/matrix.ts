@@ -28,7 +28,7 @@ function wasmRequested(): boolean {
 
 export const wasmBackend: MatrixBackend = {
 	login: async (homeserverUrl, username, password) => {
-		const wasm = (await import("../src-wasm/pkg/igni_matrix_wasm.js")) as unknown as {
+		const wasm = (await import("../../../src-wasm/pkg/igni_matrix_wasm.js")) as unknown as {
 			default: () => Promise<unknown>;
 			login: (
 				homeserverUrl: string,
@@ -64,4 +64,8 @@ export function login(
 	password: string,
 ): Promise<LoginResult> {
 	return tauriBackend.login(homeserverUrl, username, password);
+}
+
+export function recoverKey(recoveryKey: string): Promise<void> {
+	return invoke<void>("recover_key", { recoveryKey });
 }

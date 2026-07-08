@@ -8,11 +8,12 @@ const wasmMock = vi.hoisted(() => ({
 	default: vi.fn(),
 	login: vi.fn(),
 }));
-vi.mock("../src-wasm/pkg/igni_matrix_wasm.js", () => wasmMock);
+vi.mock("../../../src-wasm/pkg/igni_matrix_wasm.js", () => wasmMock);
 
 import { invoke } from "@tauri-apps/api/core";
 import {
 	login,
+	recoverKey,
 	tauriBackend,
 	isTauri,
 	createBackend,
@@ -45,6 +46,22 @@ describe("login", () => {
 		vi.mocked(invoke).mockRejectedValue("bad credentials");
 
 		await expect(login("u", "n", "p")).rejects.toBe("bad credentials");
+	});
+});
+
+describe("recoverKey", () => {
+	beforeEach(() => {
+		vi.mocked(invoke).mockReset();
+	});
+
+	it("calls the recover_key command with the recovery key", async () => {
+		vi.mocked(invoke).mockResolvedValue(undefined);
+
+		await recoverKey("EsTL-2n0X-...");
+
+		expect(invoke).toHaveBeenCalledWith("recover_key", {
+			recoveryKey: "EsTL-2n0X-...",
+		});
 	});
 });
 

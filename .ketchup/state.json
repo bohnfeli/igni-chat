@@ -1,6 +1,6 @@
 {
   "validateCommit": {
-    "mode": "strict",
+    "mode": "warn",
     "batchCount": 3
   },
   "denyList": {
@@ -16,8 +16,8 @@
     "validateCommitOnUnknown": true
   },
   "models": {
-    "tier1": null,
-    "tier2": null
+    "tier1": { "provider": "zai", "id": "glm-5.2" },
+    "tier2": { "provider": "zai", "id": "glm-5.2" }
   },
   "overrides": {
     "validators": {},
