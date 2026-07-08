@@ -1,72 +1,62 @@
 import { useState } from "react";
-import { login as matrixLogin } from "./matrix";
-import { Button } from "./components/Button";
-import { Input } from "./components/Input";
+import {
+	login as matrixLogin,
+	recoverKey as matrixRecoverKey,
+} from "./features/login/matrix";
+import {
+	onMessage as matrixOnMessage,
+	rooms as matrixRooms,
+	roomMessages as matrixRoomMessages,
+	sendMessage as matrixSendMessage,
+} from "./features/chat/matrix";
+import { Login } from "./features/login/Login";
+import { RoomList } from "./features/chat/RoomList";
+import { Conversation } from "./features/chat/Conversation";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/login.css";
+import "./styles/chat.css";
 
-function App({ login = matrixLogin }: { login?: typeof matrixLogin }) {
-	const [homeserverUrl, setHomeserverUrl] = useState("");
-	const [username, setUsername] = useState("");
-	const [password, setPassword] = useState("");
+export default function App({
+	login = matrixLogin,
+	onMessage = matrixOnMessage,
+	recoverKey = matrixRecoverKey,
+	rooms = matrixRooms,
+	roomMessages = matrixRoomMessages,
+	sendMessage = matrixSendMessage,
+}: {
+	login?: typeof matrixLogin;
+	onMessage?: typeof matrixOnMessage;
+	recoverKey?: typeof matrixRecoverKey;
+	rooms?: typeof matrixRooms;
+	roomMessages?: typeof matrixRoomMessages;
+	sendMessage?: typeof matrixSendMessage;
+}) {
 	const [userId, setUserId] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const [openRoom, setOpenRoom] = useState<string | null>(null);
 
-	if (userId) {
+	if (openRoom && userId) {
 		return (
-			<main className="app">
-				<p>{userId}</p>
-			</main>
+			<Conversation
+				openRoom={openRoom}
+				userId={userId}
+				roomMessages={roomMessages}
+				sendMessage={sendMessage}
+				onMessage={onMessage}
+			/>
 		);
 	}
 
-	const onSubmit = async (event: React.FormEvent) => {
-		event.preventDefault();
-		setError(null);
-		try {
-			const result = await login(homeserverUrl, username, password);
-			setUserId(result.userId);
-		} catch (e) {
-			setError(String(e));
-		}
-	};
+	if (userId) {
+		return (
+			<RoomList
+				userId={userId}
+				rooms={rooms}
+				recoverKey={recoverKey}
+				onOpenRoom={setOpenRoom}
+			/>
+		);
+	}
 
-	return (
-		<main className="app">
-			<form className="login-card" onSubmit={onSubmit}>
-				<h1 className="login-title">Igni-chat</h1>
-				{error && (
-					<p role="alert" className="login-error">
-						{error}
-					</p>
-				)}
-				<label className="login-field">
-					homeserver
-					<Input
-						value={homeserverUrl}
-						onChange={(e) => setHomeserverUrl(e.target.value)}
-					/>
-				</label>
-				<label className="login-field">
-					username
-					<Input
-						value={username}
-						onChange={(e) => setUsername(e.target.value)}
-					/>
-				</label>
-				<label className="login-field">
-					password
-					<Input
-						type="password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-					/>
-				</label>
-				<Button type="submit">Log in</Button>
-			</form>
-		</main>
-	);
+	return <Login login={login} onLoggedIn={setUserId} />;
 }
-
-export default App;

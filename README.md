@@ -13,8 +13,10 @@
 ## Getting Started
 
 Desktop app scaffolded (Tauri 2 + React + TS); backend wired to
-matrix-rust-sdk. Local Synapse is not yet provisioned — add it before the
-login→sync tracer bullet (see `AGENTS.md`).
+matrix-rust-sdk. Local Synapse runs via docker-compose — bring it up with
+`./dev/synapse/provision.sh` (creates the dev `igni` account). The full
+tracer bullet (login → sync → rooms → history → send → live receive → E2EE)
+is wired and verified against it.
 
 ```bash
 pnpm install            # frontend deps (allows esbuild build via pnpm-workspace.yaml)
@@ -34,8 +36,8 @@ is out of scope for v1).
 - **Vite + React frontend (TypeScript):** `src/`. Runs in the Tauri webview.
   Atomic Design + Feature-First structure emerge with the first feature.
   Depends only on the seam interface, never on raw SDK types.
-- **Dev Synapse:** docker-compose homeserver for testing (including E2EE) —
-  not yet provisioned.
+- **Dev Synapse:** docker-compose homeserver for testing (including E2EE);
+  provision via `./dev/synapse/provision.sh`.
 
 ## Contributing
 

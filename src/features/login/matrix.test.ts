@@ -5,7 +5,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 import { invoke } from "@tauri-apps/api/core";
-import { login } from "./matrix";
+import { login, recoverKey } from "./matrix";
 
 describe("login", () => {
 	beforeEach(() => {
@@ -32,5 +32,21 @@ describe("login", () => {
 		vi.mocked(invoke).mockRejectedValue("bad credentials");
 
 		await expect(login("u", "n", "p")).rejects.toBe("bad credentials");
+	});
+});
+
+describe("recoverKey", () => {
+	beforeEach(() => {
+		vi.mocked(invoke).mockReset();
+	});
+
+	it("calls the recover_key command with the recovery key", async () => {
+		vi.mocked(invoke).mockResolvedValue(undefined);
+
+		await recoverKey("EsTL-2n0X-...");
+
+		expect(invoke).toHaveBeenCalledWith("recover_key", {
+			recoveryKey: "EsTL-2n0X-...",
+		});
 	});
 });

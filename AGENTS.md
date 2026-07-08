@@ -67,6 +67,8 @@ breathes end-to-end, not a feature-complete Element replacement.
   feature owns its components, hooks, state, and types), not by file type.
 - Local Synapse via docker-compose for dev/test.
 - Clean UI↔SDK seam: one interface, a Tauri-command impl now, a WASM impl later.
+  Note: feature-first splitting fragments this single swap point — keep a
+  barrel re-export at the central path if a single-file WASM swap is ever needed.
 
 ## Constraints
 
@@ -117,3 +119,27 @@ breathes end-to-end, not a feature-complete Element replacement.
   that never had to be written. Every line of code is a liability — it must be
 - Stay aligned to what already exists (**DRY**). If there is something that should
 be refactored first ask for permission
+- **Root-cause, not band-aid.** When a smell or workaround surfaces (e.g. a
+  raised `recursion_limit`, a `// TODO`), fix the underlying cause and delete
+  the workaround in the same change. Documenting a smell leaves the smell in place.
+- **Prove causation before claiming it.** When "X is required" or "X broke",
+  isolate the variable (checkout the parent, toggle one line, clean-rebuild) and
+  confirm the error moves with it. A single assertion check is not proof.
+- **Arrange/Act/Assert, no comments.** Tests follow AAA via blank-line
+  separation and strict Arrange→Act→Assert ordering; never interleave
+  assertions with actions. No `// Arrange` markers — the project has a
+  no-comments rule.
+
+---
+
+## Workflow notes
+
+- **Subagent dispatch:** `ponytail` is a *mode*, not an agent name. Agents here
+  are `planner`/`reviewer`/`scout`/`worker`; dispatch file-writing bursts to
+  `worker`.
+- **One concern per commit — refactors included.** "One burst = one commit"
+  holds even when a refactor touches multiple things in one file; split disjoint
+  concerns into separate commits (bundled concerns get flagged).
+- **Parallel subagents need disjoint files.** Two agents editing the same file
+  in parallel is a merge-conflict factory, not parallelism. Parallelize across
+  independent files; the parent integrates and commits serially.

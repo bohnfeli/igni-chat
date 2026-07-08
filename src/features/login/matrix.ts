@@ -16,3 +16,7 @@ export function login(
 		password,
 	});
 }
+
+export function recoverKey(recoveryKey: string): Promise<void> {
+	return invoke<void>("recover_key", { recoveryKey });
+}
