@@ -124,35 +124,30 @@ be refactored first ask for permission
 
 ### Object binding vs. free functions (Rust)
 
-Operations that **share state** are bound to a struct that holds that state;
-**stateless** helpers stay free functions. Do NOT wrap stateless logic in a
-dummy unit struct (`struct Foo; impl Foo { fn bar() }`) just to avoid a free
-function — an object with no state is an anti-pattern (KISS/YAGNI).
+Operations are **bound to a struct**, not exposed as free functions. The only
+free functions allowed are constructors that build the struct. Rationale: a
+free function that looks "stateless" today is a trap — there is **always
+more**. Any operation on a real client needs the shared authenticated
+`matrix_sdk::Client` (login, sync, send, send-to-device...). Binding up front
+avoids a forced refactor the moment a second operation lands.
 
-Why: Rust free functions are idiomatic for stateless transforms (cf. `std`,
-`matrix-sdk`). The object-oriented boundary in this project lives at the
-**UI↔SDK seam** (the `MatrixBackend` interface and its `*Backend` objects on
-the TS side), not inside Rust plumbing. A Rust free function behind a Tauri
-command is an implementation detail, not the API surface.
-
-Applied: `igni_matrix::login` is a free function today (it is stateless — it
-builds a `Client`, authenticates, returns a `LoginResult`). When **sync**
-lands, multiple operations must reuse the same authenticated `Client`; at that
-point introduce a session struct holding the `Client` and bind login/sync/send
-to it. That refactor is part of "add sync", not a speculative change now.
+Applied: the `igni-matrix` crate exposes `IgniClient`, constructed once and
+holding the live `Client`; `login` (and later sync/send) are methods on it.
+Free functions exist only at the outermost wiring seam (`run()` entry points,
+`#[tauri::command]` shims, the wasm-bindgen wrapper) where a struct would be
+pure ceremony — those translate, they do not own domain logic.
 
 ### Test file layout
 
-Each language keeps its **native** test idiom — they are not force-aligned:
+Tests live in **separate files** in a `tests/` directory, aligned with the
+TypeScript convention (`foo.test.ts(x)`). Rust unit tests are **not** inlined
+as `#[cfg(test)] mod tests { ... }` at the bottom of the module — that bloats
+the source file and mixes concerns. Keep production code and test code apart.
 
-- **TypeScript:** co-located `foo.test.ts(x)` next to `foo.ts(x)`.
-- **Rust:** inline `#[cfg(test)] mod tests { ... }` at the bottom of the module
-  under test. Use the `tests/` directory only for **integration** tests that
-  exercise the crate's public API as an external consumer.
+- **TypeScript:** `src/foo.ts` tested by `src/foo.test.ts(x)`.
+- **Rust:** `src/lib.rs` (or `src/<module>.rs`) tested by
+  `tests/<module>.rs` (integration) or a sibling test module file.
 
-Why: Rust's inline `mod tests` has real advantages — access to private items,
-zero code in release builds, true colocation. The TS `.test.ts` convention
-exists because JS has no conditional compilation or private-item access in the
-same way. Mechanical cross-language uniformity would trade Rust's advantages
-for marginal consistency; the seam/colocation goal is already met by each
-idiom independently.
+Where private-item access forces an inline test, isolate it in a dedicated
+`#[cfg(test)]` module in its **own** file referenced via `#[path]`, never
+inside the production module body.
