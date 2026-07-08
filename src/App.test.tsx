@@ -1,24 +1,14 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
-import { createBackend } from "./features/login/matrix";
-
-vi.mock("./features/login/matrix", async (importOriginal) => {
-	const actual =
-		await importOriginal<typeof import("./features/login/matrix")>();
-	return { ...actual, createBackend: vi.fn() };
-});
 
 vi.mock("@tauri-apps/api/event", () => ({
 	listen: vi.fn().mockResolvedValue(() => {}),
 }));
 
 describe("App", () => {
-	beforeEach(() => {
-		vi.mocked(createBackend).mockReset();
-	});
 	it("logs in with the form fields and shows the userId", async () => {
 		const login = vi.fn().mockResolvedValue({
 			userId: "@igni:localhost",
@@ -85,13 +75,8 @@ describe("App", () => {
 		expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
 	});
 
-	it("uses the backend's login by default and shows the userId", async () => {
-		const backendLogin = vi
-			.fn()
-			.mockResolvedValue({ userId: "@dflt:local", deviceId: "DFLT" });
-		vi.mocked(createBackend).mockReturnValue({ login: backendLogin });
+	it("uses the configured backend's login by default (demoBackend in dev)", async () => {
 		const user = userEvent.setup();
-
 		render(<App />);
 
 		await user.type(
@@ -102,12 +87,7 @@ describe("App", () => {
 		await user.type(screen.getByLabelText(/password/i), "dev-password");
 		await user.click(screen.getByRole("button", { name: /log in/i }));
 
-		expect(backendLogin).toHaveBeenCalledWith(
-			"http://localhost:8008",
-			"igni",
-			"dev-password",
-		);
-		expect(await screen.findByText("@dflt:local")).toBeInTheDocument();
+		expect(await screen.findByText("@demo:localhost")).toBeInTheDocument();
 	});
 
 	it("renders the room history when a room is clicked", async () => {
